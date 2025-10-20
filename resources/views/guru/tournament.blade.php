@@ -28,12 +28,8 @@
 </head>
 
 <body
-  class="relative font-poppins min-h-[100dvh] box-border flex flex-col justify-between p-4 md:p-6 text-white overflow-x-hidden select-none"
-  style="background-image: url('/images/tournament.png');
-             background-size: cover;
-             background-position: center;
-             background-repeat: no-repeat;
-             background-attachment: fixed;">
+class="relative font-poppins h-[100dvh] box-border flex flex-col p-4 md:p-6 text-white overflow-hidden select-none"
+style="background-image: url('/images/tournament.png');" >
   <!-- Background music (autoplay muted per browser policy, unmute on user interaction) -->
   <audio id="bgMusic" src="{{ asset('audio/sound.mp3') }}" preload="auto" loop muted autoplay></audio>
 
@@ -133,8 +129,7 @@
 
       <!-- Create Tournament Section -->
       <div class="animate-slideInLeft delay-300 flex-1">
-        <div class="bg-white/10 border border-[#6aa8fa]/40 rounded-xl px-4 md:px-6 py-4 text-white font-medium 
-                  shadow-md backdrop-blur-sm h-full flex flex-col">
+        <div class="bg-white/10 border border-[#6aa8fa]/40 rounded-xl px-4 md:px-6 py-4 text-white font-medium shadow-md backdrop-blur-sm h-full flex flex-col">
           <h2
             class="font-semibold text-[#cfe4ff] mb-4 md:mb-6 text-lg md:text-xl drop-shadow-sm tracking-wide text-left">
             Create New Tournament
@@ -260,7 +255,7 @@
   </main>
 
   <!-- Modal - OPTIMIZED FOR MOBILE -->
-  <div id="modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div id="modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[2147483648] p-4">
     <div
       class="relative bg-gradient-to-b from-[#0f1b2e]/90 to-[#1b2e4a]/90 
               border border-[#6aa8fa]/50 rounded-2xl shadow-[0_0_25px_rgba(70,150,255,0.4)] 
