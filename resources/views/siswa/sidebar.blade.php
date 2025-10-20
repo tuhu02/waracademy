@@ -45,7 +45,16 @@
       <a href="{{ route('level') }}" class="px-4 py-2 rounded-md hover:bg-white/10 transition">🚀 Level</a>
       <a href="{{ route('tournament') }}" class="px-4 py-2 rounded-md hover:bg-white/10 transition">🏆 Tournament</a>
       {{-- <a href="{{ route('achievement') }}" class="px-4 py-2 rounded-md hover:bg-white/10 transition">🎯 Achievement</a> --}}
-      {{-- <a href="{{ route('profile') }}" class="px-4 py-2 rounded-md hover:bg-white/10 transition">👤 Profile</a> --}}
+      @if(session('pengguna_id'))
+        <a href="{{ route('profil.show', session('pengguna_id')) }}" class="px-4 py-2 rounded-md hover:bg-white/10 transition">
+            👤 Profile
+        </a>
+      @else
+          <a href="{{ route('login') }}" class="px-4 py-2 rounded-md hover:bg-white/10 transition">
+              🔐 Profile
+          </a>
+      @endif
+
     </nav>
 
     <!-- Logout -->
