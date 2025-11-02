@@ -10,9 +10,9 @@ class Level extends Model
     protected $primaryKey = 'id_level';
     public $timestamps = false;
 
-    public function kisiKisi()
-    {
-        return $this->hasOne(KisiKisi::class, 'level_id', 'id_level');
+    public function KisiKisi() {
+        return $this->hasMany(KisiKisi::class, 'id_level', 'id_level');
     }
+
 
 }

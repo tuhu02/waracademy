@@ -20,6 +20,42 @@
             }
         }
   </script>
+
+<script type="module">
+  import { initMusic, fadeOutMusic, toggleMusic, setVolume } from '/js/music.js';
+
+  const music = initMusic('/audio/sound.mp3'); // ganti dengan musikmu
+
+  // Saat klik pindah halaman
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("a").forEach(link => {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const target = e.currentTarget.href;
+        fadeOutMusic(1000, () => window.location.href = target);
+      });
+    });
+
+    // Tombol toggle on/off
+    const btnToggle = document.getElementById("toggleMusic");
+    const slider = document.getElementById("volumeSlider");
+
+    if (btnToggle) {
+      btnToggle.addEventListener("click", () => {
+        const enabled = localStorage.getItem("bgmEnabled") !== "true";
+        toggleMusic(enabled);
+        btnToggle.textContent = enabled ? "🔊 Musik ON" : "🔇 Musik OFF";
+      });
+      // Set label awal
+      btnToggle.textContent = localStorage.getItem("bgmEnabled") !== "false" ? "🔊 Musik ON" : "🔇 Musik OFF";
+    }
+
+    if (slider) {
+      slider.value = localStorage.getItem("bgmVolume") || 0.5;
+      slider.addEventListener("input", () => setVolume(slider.value));
+    }
+  });
+</script>
 </head>
 
 <body class="font-poppins relative bg-gradient-to-b from-[#0f1b2e] via-[#304863] to-[#3b5875] min-h-screen flex flex-col justify-between p-6 text-white overflow-hidden select-none">
@@ -215,6 +251,37 @@
 
   <!-- SCRIPT PARTIKEL -->
   <script>
+    const audio = document.getElementById('bgMusic');
+
+    // Fungsi fade out
+    function fadeOutAudio(audio, duration, callback) {
+      const step = 50; 
+      const fadeAmount = audio.volume / (duration / step);
+      const fadeInterval = setInterval(() => {
+        if (audio.volume - fadeAmount > 0) {
+          audio.volume -= fadeAmount;
+        } else {
+          audio.volume = 0;
+          clearInterval(fadeInterval);
+          audio.pause();
+          if (callback) callback();
+        }
+      }, step);
+    }
+
+    // Tambahkan efek fade-out pada tombol navigasi
+    document.querySelectorAll('a[href]').forEach(link => {
+      link.addEventListener('click', e => {
+        const href = link.getAttribute('href');
+        if (href.startsWith('http') || href.startsWith('#')) return; // skip eksternal
+
+        e.preventDefault(); // hentikan pindah halaman dulu
+        fadeOutAudio(audio, 1500, () => {
+          window.location.href = href; // pindah halaman setelah fade out selesai
+        });
+      });
+    });
+
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
     canvas.width = innerWidth;

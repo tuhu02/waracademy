@@ -20,6 +20,83 @@
     }
   </script>
 
+<script type="module">
+  import { initMusic, fadeInMusic, fadeOutMusic } from '/js/music.js';
+
+  // Inisialisasi musik
+  const music = initMusic('/audio/classical.mp3'); // Ganti dengan audio yang diinginkan
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const audio = document.getElementById('bgMusic');
+    const savedVol = localStorage.getItem('volume');
+    const savedMute = localStorage.getItem('muted');
+    const volume = savedVol ? parseFloat(savedVol) : 0.6;
+    const muted = savedMute === 'true';
+    audio.volume = 0; // Mulai fade-in dari 0
+
+    // Fungsi fade-in audio
+    function fadeInAudio(audio, duration = 2000) {
+      const step = 50;
+      const fadeAmount = volume / (duration / step);
+      const fadeInterval = setInterval(() => {
+        if (audio.volume + fadeAmount < volume) {
+          audio.volume += fadeAmount;
+        } else {
+          audio.volume = volume;
+          clearInterval(fadeInterval);
+        }
+      }, step);
+    }
+
+    // Fungsi fade-out audio
+    function fadeOutAudio(audio, duration = 1500, callback) {
+      const step = 50;
+      const fadeAmount = audio.volume / (duration / step);
+      const fadeInterval = setInterval(() => {
+        if (audio.volume - fadeAmount > 0) {
+          audio.volume -= fadeAmount;
+        } else {
+          audio.volume = 0;
+          clearInterval(fadeInterval);
+          audio.pause();
+          if (callback) callback();
+        }
+      }, step);
+    }
+
+    // Mulai fade-in saat halaman load
+    if (!muted) {
+      audio.play().then(() => fadeInAudio(audio, 2000)).catch(() => {});
+    }
+
+    // Efek fade-out untuk semua link keluar
+    document.querySelectorAll('a[href]').forEach(link => {
+      link.addEventListener('click', e => {
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript')) return;
+
+        e.preventDefault();
+        fadeOutAudio(audio, 1500, () => {
+          window.location.href = href; // Arahkan ke link setelah fade-out
+        });
+      });
+    });
+
+    // Efek fade-out untuk level dan trofi
+    document.querySelectorAll('.level-dot, .trophy-icon').forEach(dot => {
+      dot.addEventListener('click', e => {
+        e.preventDefault(); // Mencegah klik default
+        const targetUrl = dot.getAttribute('onclick')?.match(/'(.*?)'/)?.[1] 
+                         || dot.dataset.href 
+                         || dot.href 
+                         || dot.getAttribute('onclick')
+                         || e.target.getAttribute('onclick');
+        fadeOutAudio(audio, 1500, () => window.location.href = targetUrl);
+      });
+    });
+  });
+</script>
+
   <style>
     body {
       overflow: hidden;
@@ -111,10 +188,14 @@
 </head>
 
 <body class="bg-gradient-to-b from-[#0f1b2e] via-[#243b55] to-[#3b5875] min-h-screen text-white">
+  <audio id="bgMusic" loop>
+      <source src="/audio/classical.mp3" type="audio/mpeg">
+  </audio>
   <canvas id="particles" class="absolute inset-0 z-0"></canvas>
   <img src="/images/war.png" alt="Logo"
        style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.5);
               height:300px;opacity:0.05;pointer-events:none;z-index:0;mix-blend-mode:lighten;">
+
 
   <h1 class="text-center text-5xl font-blackops mt-10 mb-6
              bg-gradient-to-b from-[#e5f2ff] via-[#a3d3fa] to-[#6aa8fa]
@@ -202,7 +283,7 @@
     c.setAttribute('cx', pos.x);
     c.setAttribute('cy', pos.y);
     c.setAttribute('r', 22);
-    c.addEventListener('click', () => window.location.href = `/level/${levelNum}`);
+    c.setAttribute('data-href', `/level/${levelNum}`);
 
     // teks nomor level
     const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -255,41 +336,7 @@
   trophy.textContent = '🏆';
   trophy.addEventListener('click', () => window.location.href = "{{ route('tournament') }}");
   levelsGroup.appendChild(trophy);
-</script>
-
-
-  <script>
-    // efek partikel
-    const canvas = document.getElementById('particles');
-    const ctx = canvas.getContext && canvas.getContext('2d');
-    if (ctx) {
-      function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
-      resize();
-      window.addEventListener('resize', resize);
-
-      const particles = Array.from({length: 60}, () => ({
-        x: Math.random()*canvas.width,
-        y: Math.random()*canvas.height,
-        size: Math.random()*2,
-        speedX: (Math.random()-0.5)*0.4,
-        speedY: (Math.random()-0.5)*0.4
-      }));
-
-      function draw() {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        particles.forEach(p => {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-          ctx.fill();
-          p.x += p.speedX; p.y += p.speedY;
-          if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
-          if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
-        });
-        requestAnimationFrame(draw);
-      }
-      draw();
-    }
   </script>
+
 </body>
 </html>

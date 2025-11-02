@@ -13,11 +13,11 @@ class KisiKisi extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'level_id', 'topik', 'jumlah_soal', 'waktu_menit', 'jenis_soal'
+        'id_level', 'topik', 'jumlah_soal', 'waktu_menit', 'jenis_soal'
     ];
 
     public function level()
     {
-        return $this->belongsTo(Level::class, 'level_id', 'id_level');
+        return $this->belongsTo(Level::class, 'id_level', 'id_level');
     }
 }
