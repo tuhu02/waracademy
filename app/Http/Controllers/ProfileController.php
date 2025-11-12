@@ -13,7 +13,7 @@ use App\Models\PesertaTurnamen;
 
 class ProfileController extends Controller
 {
-    public function index(Request $id)
+    public function index($id)
     {
         /** @var Pengguna $user */
         $id = session('id_pengguna');
