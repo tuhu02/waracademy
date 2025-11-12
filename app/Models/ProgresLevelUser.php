@@ -3,12 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ProgresLevelUser extends Model
 {
-    protected $table = 'progreslevelpengguna'; // pastikan nama table sesuai
-    protected $primaryKey = 'id_progres';      // primary key table
-    public $timestamps = false;                // kalau tidak ada created_at/updated_at
+    use HasFactory;
 
-    protected $fillable = ['id_pengguna', 'id_level', 'exp', 'bintang'];
+    protected $table = 'progreslevelpengguna';
+    protected $primaryKey = 'id_progres';
+    public $timestamps = false;
+
+    protected $fillable = ['id_pengguna','id_level','exp','bintang'];
+
+    public function level()
+    {
+        return $this->belongsTo(Level::class, 'id_level', 'id_level');
+    }
 }

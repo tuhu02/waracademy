@@ -27,18 +27,17 @@ Route::get('/home', function () {
     }
     return view('siswa.home', ['username' => session('pengguna_username')]);
 })->name('home');
-//profile
-
-Route::get('/guru/dashboard', function () {
-    if (!session()->has('pengguna_id')) {
-        return redirect()->route('login');
-    }
-    return view('guru.dashboard');
-})->name('guru.dashboard');
 
 
 
-Route::get('/profil/{id}', [ProfileController::class, 'show'])->name('profil.show');
+
+// PROFIL
+Route::get('/profil', [ProfileController::class, 'index'])->name('profil');
+Route::post('/profil/update', [ProfileController::class, 'update'])->name('profil.update');
+
+
+
+
 
 // Route::get('/level', function () {
 //     if (!session()->has('pengguna_id')) {

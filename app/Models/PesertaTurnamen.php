@@ -13,13 +13,10 @@ class PesertaTurnamen extends Model
     protected $primaryKey = 'id_peserta';
     public $timestamps = false;
 
-    protected $fillable = [
-        'id_turnamen',
-        'id_pengguna',
-        'skor_akhir',
-        'peringkat',
-        'joined_at',
-        'status',
-        'lives_remaining',
-    ];
+    protected $fillable = ['id_turnamen','id_pengguna','skor_akhir','peringkat'];
+
+    public function turnamen()
+    {
+        return $this->belongsTo(Turnamen::class, 'id_turnamen', 'id_turnamen');
+    }
 }

@@ -1,125 +1,100 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profil Pemain - WarAcademy</title>
-    {{-- Pastikan Tailwind CSS sudah ter-link di proyek Anda --}}
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Custom Font jika diperlukan */
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #1A2754; /* Warna biru gelap dasar */
-            overflow-x: hidden; 
-            position: relative; 
-        }
+@extends('layouts.app')
 
-        /* === Efek Bintang Bergerak (Dot Pattern) yang LEBIH JARANG === */
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; 
-            z-index: -1; 
-            /* Mengurangi ukuran titik (2px jadi 1px dan 1px jadi 0.5px) */
-            background-image: radial-gradient(white, rgba(255, 255, 255, 0.1) 1px, transparent 150px),
-                              radial-gradient(white, rgba(255, 255, 255, 0.15) 0.5px, transparent 100px);
-            
-            /* Memperbesar ukuran pola (80px jadi 150px dan 60px jadi 120px)
-               Ini membuat bintang saling berjarak lebih jauh. */
-            background-size: 150px 150px, 120px 120px; 
-            
-            /* Mengubah offset pola kedua (40px jadi 75px) */
-            background-position: 0 0, 75px 75px; 
-            
-            animation: moveBackground 90s linear infinite; /* Animasi diperlambat (60s ke 90s) agar lebih subtle */
-            opacity: 0.7; /* Opasitas sedikit dikurangi */
-        }
-
-        /* Keyframes untuk pergerakan bintang */
-        @keyframes moveBackground {
-            from {
-                background-position: 0 0, 75px 75px;
-            }
-            to {
-                /* Bergerak perlahan ke kanan bawah */
-                background-position: 1500px 1500px, 1575px 1575px; 
-            }
-        }
-    </style>
-</head>
-<body class="text-white p-4 sm:p-8">
-
-    <div class="max-w-7xl mx-auto z-10 relative"> 
-        <header class="flex justify-between items-center mb-8">
-            <div class="flex items-center gap-4">
-                {{-- Menggunakan $pengguna->avatar jika ada, fallback ke URL placeholder --}}
-                <img src="{{ $pengguna->avatar ?? 'https://cdn.pixabay.com/photo/2022/10/19/01/02/woman-7531315_640.png' }}" alt="Avatar" class="w-12 h-12 rounded-full border-2 border-white">
-                <div>
-                    <h1 class="text-xl font-bold">{{ $pengguna->username }}</h1>
-                    <p class="text-sm text-gray-300">Level {{ $pengguna->level_id ?? '1' }}</p> {{-- Asumsi ada relasi level --}}
-                </div>
-            </div>
-            <a href="{{ route('home') }}" class="text-gray-300 hover:text-white">&larr; Back</a>
-        </header>
-
-        <main class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-
-            <div class="lg:col-span-1 bg-blue-900/50 p-6 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-bold mb-6 border-b border-blue-700 pb-2">Player Status</h2>
-                <div class="space-y-3 text-lg">
-                    <div class="flex justify-between"><span>Matches</span> <span class="font-semibold">{{ $playerStats->matches }}</span></div>
-                    <div class="flex justify-between"><span>Wins</span> <span class="font-semibold text-green-400">{{ $playerStats->wins }}</span></div>
-                    <div class="flex justify-between"><span>Loose</span> <span class="font-semibold text-red-400">{{ $playerStats->matches - $playerStats->wins }}</span></div>
-                </div>
-            </div>
-
-            <div class="lg:col-span-2 bg-blue-900/50 p-6 rounded-lg shadow-lg flex flex-col items-center">
-                {{-- Menggunakan $pengguna->avatar jika ada, fallback ke URL placeholder --}}
-                <img src="{{ $pengguna->avatar ?? 'https://cdn.pixabay.com/photo/2022/10/19/01/02/woman-7531315_640.png' }}" alt="Avatar Utama" class="w-40 h-40 rounded-full border-4 border-white shadow-2xl ring-4 ring-blue-500 mb-6">
-
-                <div class="w-full text-lg space-y-3 mt-4">
-                    <div class="flex justify-between p-3 bg-blue-800/40 rounded-md">
-                        <span class="text-gray-300">Player Name</span>
-                        <span class="font-bold">{{ $pengguna->username }}</span>
-                    </div>
-                    <div class="flex justify-between p-3 bg-blue-800/40 rounded-md">
-                        <span class="text-gray-300">Player Level</span>
-                        <span class="font-bold">{{ $pengguna->level_id ?? '1' }}</span>
-                    </div>
-                    {{-- Menggunakan tanggal_registrasi untuk "Started On" --}}
-                    <div class="flex justify-between p-3 bg-blue-800/40 rounded-md">
-                        <span class="text-gray-300">Started On</span>
-                        <span class="font-bold">{{ \Carbon\Carbon::parse($pengguna->tanggal_registrasi)->format('F j, Y') }}</span>
-                    </div>
-                    {{-- Menggunakan tanggal_registrasi untuk "Player ID" dengan format patenfiks --}}
-                    <div class="flex justify-between p-3 bg-blue-800/40 rounded-md">
-                        <span class="text-gray-300">Player ID</span>
-                        <span class="font-bold">
-                            {{ \Carbon\Carbon::parse($pengguna->tanggal_registrasi)->format('siHdmy') }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-                <div class="bg-blue-900/50 p-6 rounded-lg shadow-lg">
-                    <h2 class="text-2xl font-bold mb-6 border-b border-blue-700 pb-2">Tournament Stats</h2>
-                    <div class="space-y-3 text-lg">
-                        <div class="flex justify-between"><span>Matches</span> <span class="font-semibold">{{ $playerStats->matches }}</span></div>
-                        <div class="flex justify-between"><span>Wins</span> <span class="font-semibold text-green-400">{{ $playerStats->wins }}</span></div>
-                        <div class="flex justify-between"><span>Loose</span> <span class="font-semibold text-red-400">{{ $playerStats->matches - $playerStats->wins }}</span></div>
-                    </div>
-                </div>
-            
-
-        </main>
+@section('content')
+<div class="container mx-auto p-4">
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-semibold">Profil Saya</h1>
+        <button class="btn" onclick="document.getElementById('editProfilModal').classList.remove('hidden')">Edit Profil</button>
     </div>
 
-</body>
-</html>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Panel Kiri: Profil Card -->
+        <div class="col-span-1 bg-white p-4 rounded shadow">
+            <div class="flex flex-col items-center">
+                <img src="{{ asset($user->avatar_url ?? 'avatars/cat.png') }}" alt="Avatar" class="w-36 h-36 rounded-full object-cover mb-3">
+                <h2 class="text-xl font-bold">{{ $user->username }}</h2>
+                <p class="text-sm text-gray-600">{{ $user->email }}</p>
+                <p class="mt-3 text-sm">{{ $user->deskripsi_profil ?? 'Belum ada deskripsi.' }}</p>
+
+                <div class="w-full mt-4">
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                            <div class="text-lg font-semibold">{{ number_format($totalExp) }}</div>
+                            <div class="text-xs text-gray-500">Total EXP</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-semibold">{{ $totalBintang }} / {{ $maxBintangPossible }}</div>
+                            <div class="text-xs text-gray-500">Total Bintang</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-semibold">{{ $jumlahTurnamen }}</div>
+                            <div class="text-xs text-gray-500">Turnamen</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Kanan: Tabs -->
+        <div class="col-span-2 bg-white p-4 rounded shadow">
+            <div>
+                <ul class="flex border-b mb-4">
+                    <li class="mr-4"><a href="#tab-level" class="pb-2 border-b-2 border-transparent hover:border-gray-300">Riwayat Level</a></li>
+                    <li class="mr-4"><a href="#tab-turnamen" class="pb-2 border-b-2 border-transparent hover:border-gray-300">Riwayat Turnamen</a></li>
+                </ul>
+
+                <div id="tab-level">
+                    <h3 class="font-semibold mb-2">Riwayat Level</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-gray-600">
+                                    <th class="p-2">Level</th>
+                                    <th class="p-2">EXP</th>
+                                    <th class="p-2">Bintang</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($riwayatLevel as $row)
+                                <tr class="border-t">
+                                    <td class="p-2">{{ optional($row->level)->nomor_level ?? $row->id_level }}</td>
+                                    <td class="p-2">{{ $row->exp }}</td>
+                                    <td class="p-2">{{ $row->bintang }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="tab-turnamen" class="mt-6">
+                    <h3 class="font-semibold mb-2">Riwayat Turnamen</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-gray-600">
+                                    <th class="p-2">Nama Turnamen</th>
+                                    <th class="p-2">Kode Room</th>
+                                    <th class="p-2">Peringkat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($riwayatTurnamen as $p)
+                                <tr class="border-t">
+                                    <td class="p-2">{{ optional($p->turnamen)->nama_turnamen ?? '-' }}</td>
+                                    <td class="p-2">{{ optional($p->turnamen)->kode_room ?? '-' }}</td>
+                                    <td class="p-2">{{ $p->peringkat ?? '-' }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@include('partials.edit-profil-modal')
+@endsection

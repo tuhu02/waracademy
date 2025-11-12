@@ -46,7 +46,7 @@
       <a href="{{ route('tournament') }}" class="px-4 py-2 rounded-md hover:bg-white/10 transition">🏆 Tournament</a>
       {{-- <a href="{{ route('achievement') }}" class="px-4 py-2 rounded-md hover:bg-white/10 transition">🎯 Achievement</a> --}}
       @if(session('pengguna_id'))
-        <a href="{{ route('profil.show', session('pengguna_id')) }}" class="px-4 py-2 rounded-md hover:bg-white/10 transition">
+        <a href="{{ route('profil', session('pengguna_id')) }}" class="px-4 py-2 rounded-md hover:bg-white/10 transition">
             👤 Profile
         </a>
       @else

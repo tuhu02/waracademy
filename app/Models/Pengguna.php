@@ -4,36 +4,34 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
-class Pengguna extends Authenticatable
+class Pengguna extends Model
 {
-    use Notifiable;
+    use HasFactory;
 
     protected $table = 'pengguna';
     protected $primaryKey = 'id_pengguna';
-    public $incrementing = true;
-    protected $keyType = 'int';
-    public $timestamps = false; // tabel Anda menggunakan tanggal_registrasi custom
+    public $timestamps = false; // tabel menggunakan created_at manual/ berbeda
 
     protected $fillable = [
-        'username',
-        'email',
-        'role',
-        'password_hash',
-        'google_id',
-        'total_exp',
-        'deskripsi_profil',
-        'avatar_url',
-        'tanggal_registrasi'
+        'username', 'email', 'role', 'password_hash', 'google_id', 'total_exp', 'deskripsi_profil', 'avatar_url'
     ];
 
-    protected $hidden = [
-        'password_hash'
-    ];
-
-    // Laravel Authentication akan mengambil password melalui method ini
-    public function getAuthPassword()
+    public function progres()
     {
-        return $this->password_hash;
+        return $this->hasMany(ProgresLevelUser::class, 'id_pengguna', 'id_pengguna');
+    }
+
+    public function riwayatPertandingan()
+    {
+        return $this->hasMany(RiwayatPertandingan::class, 'id_pengguna', 'id_pengguna');
+    }
+
+    public function pesertaTurnamen()
+    {
+        return $this->hasMany(PesertaTurnamen::class, 'id_pengguna', 'id_pengguna');
     }
 }
+
