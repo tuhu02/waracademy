@@ -33,7 +33,7 @@ Route::get('/home', function () {
 
 // PROFIL
 Route::get('/profil/{id}', [ProfileController::class, 'index'])->name('profil');
-Route::post('/profil/update', [ProfileController::class, 'update'])->name('profil.update');
+Route::put('/profil/update/{id}', [ProfileController::class, 'update'])->name('profil.update');
 
 
 

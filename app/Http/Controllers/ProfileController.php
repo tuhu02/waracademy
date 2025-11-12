@@ -71,17 +71,14 @@ class ProfileController extends Controller
         ));
     }
 
-    public function update(Request $request)
+    public function update(Request $request, $id)
     {
-        /** @var Pengguna $user */
-        $id = session('id_pengguna');
+        // $id = session('id_pengguna');
         $user = Pengguna::find($id);
 
         if (!$user) {
             return redirect()->route('login');
         }
-
-        $id = $user->id_pengguna;
 
         $rules = [
             'username' => [
@@ -89,7 +86,7 @@ class ProfileController extends Controller
                 Rule::unique('pengguna', 'username')->ignore($id, 'id_pengguna')
             ],
             'deskripsi_profil' => ['nullable', 'string', 'max:1000'],
-            'avatar' => ['nullable', Rule::in(['cat.png','dog.png','fox.png','lion.png','owl.png','panda.png'])],
+            'avatar_url' => ['nullable', Rule::in(['cat.png','dog.png','fox.png','lion.png','owl.png','panda.png'])],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -99,13 +96,17 @@ class ProfileController extends Controller
 
         $user->username = $request->input('username');
         $user->deskripsi_profil = $request->input('deskripsi_profil');
-
-        if ($request->filled('avatar')) {
-            $user->avatar_url = 'avatars/' . $request->input('avatar');
+        if ($request->filled('avatar_url')) {
+            $user->avatar_url = $request->input('avatar_url');
         }
 
         $user->save();
 
-        return redirect()->route('profil')->with('success', 'Profil berhasil diperbarui.');
+        // ✅ pastikan session login tetap aktif & diperbarui
+        session(['id_pengguna' => $user->id_pengguna]);
+        session(['pengguna_username' => $user->username]);
+
+        return redirect()->route('profil', session('pengguna_id'))->with('success', 'Profil berhasil diperbarui.');
     }
+
 }
