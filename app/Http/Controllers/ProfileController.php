@@ -13,12 +13,12 @@ use App\Models\PesertaTurnamen;
 
 class ProfileController extends Controller
 {
-    public function index($id)
+    public function index($idPengguna)
     {
         /** @var Pengguna $user */
-        $id = session('id_pengguna');
-        $user = Pengguna::find($id);
-        
+
+        $user = \App\Models\Pengguna::findOrFail($idPengguna);
+
         if (!$user) {
             return redirect()->route('login');
         }
