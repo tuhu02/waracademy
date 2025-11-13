@@ -5,6 +5,8 @@ use App\Http\Controllers\LevelController;
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Guru\TournamentController;
+use App\Http\Controllers\Guru\GuruController;
+use App\Models\Pengguna;
 
 Route::get('/', function () {
     return view('landing'); // pastikan file resources/views/landing.blade.php ada
@@ -21,11 +23,18 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('google.redirect');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('google.callback');
 
+
 Route::get('/home', function () {
     if (!session()->has('pengguna_id')) {
         return redirect()->route('login');
     }
-    return view('siswa.home', ['username' => session('pengguna_username')]);
+
+    $user = Pengguna::find(session('pengguna_id'));
+
+    return view('siswa.home', [
+        'username' => session('pengguna_username'),
+        'user' => $user
+    ]);
 })->name('home');
 
 
@@ -49,10 +58,24 @@ Route::get('/tournament', function () {
     if (!session()->has('pengguna_id')) {
         return redirect()->route('login');
     }
-    return view('siswa.tournament');
+
+    $user = Pengguna::find(session('pengguna_id'));
+
+
+    return view('siswa.tournament', [
+        'username' => session('pengguna_username'),
+        'user' => $user
+    ]);
 })->name('tournament');
 
-// Route Guru 
+
+
+
+// Route Guru
+Route::get('/guru/dashboard', [GuruController::class, 'index'])->name('guru.dashboard');
+
+
+
 Route::get('/guru/home', function () {
     if (!session()->has('pengguna_id')) {
         return redirect()->route('login');

@@ -65,6 +65,8 @@ class ProfileController extends Controller
             'cat.png','dog.png','fox.png','lion.png','owl.png','panda.png'
         ];
 
+        session(['pengguna_id' => $id]);
+        // dd(session('pengguna_id'));
         return view('profil', compact(
             'user', 'totalExp', 'totalBintang', 'maxBintangPossible',
             'riwayatLevel', 'riwayatTurnamen', 'jumlahTurnamen', 'availableAvatars'

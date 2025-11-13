@@ -76,6 +76,7 @@ class AuthController extends Controller
 
     
         if ($user->role === 'teacher') {
+            // dd($user);
             return redirect()
                 ->route('guru.dashboard')
                 ->with('success', 'Berhasil login, selamat datang ' . $user->username);

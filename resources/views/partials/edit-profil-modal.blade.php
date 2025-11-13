@@ -11,7 +11,7 @@
             class="absolute top-3 right-3 text-blue-300 hover:text-blue-100 text-xl">
       ✕
     </button>
-
+    
     <form action="{{ route('profil.update', session('pengguna_id')) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
       @csrf
       @method('PUT')
