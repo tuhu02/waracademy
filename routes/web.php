@@ -6,6 +6,7 @@ use App\Http\Controllers\LevelController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Guru\TournamentController;
 use App\Http\Controllers\Guru\GuruController;
+use App\Http\Controllers\SiswaTournamentController;
 use App\Models\Pengguna;
 
 Route::get('/', function () {
@@ -38,7 +39,10 @@ Route::get('/home', function () {
 })->name('home');
 
 
-
+Route::match(['get','post'], '/tournament/join', [SiswaTournamentController::class, 'join'])
+    ->name('tournament.join');
+Route::get('/tournament/lobby/{code}', [SiswaTournamentController::class, 'lobby'])->name('tournament.lobby');
+Route::get('/tournament/lobby/{kode}/status', [SiswaTournamentController::class, 'lobbyStatus'])->name('tournament.lobby.status');
 
 // PROFIL
 Route::get('/profil/{id}', [ProfileController::class, 'index'])->name('profil');
