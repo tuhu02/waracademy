@@ -191,23 +191,26 @@
     </div>
 
     <!-- Input Kode Turnamen -->
-    <div class="text-center w-full md:w-auto">
-      <h2 class="text-base md:text-lg font-semibold mb-3 text-white">Enter Tournament Code</h2>
-      <input type="text" class="bg-white/10 border border-[#6aa8fa]/40 rounded-xl px-4 py-2 text-white font-medium 
-                    shadow-md hover:bg-white/20 backdrop-blur-sm focus:bg-white/20 focus:border-blue-400 
-                    focus:outline-none w-full max-w-xs md:w-64 text-center placeholder-gray-300 hover:shadow-[0_0_25px_rgba(70,150,255,0.4)] 
-                    transition duration-300 mb-3 md:mb-0" placeholder="Example: WAR123">
+    <div class="text-center w-full md:w-auto" x-data="joinForm()">
+      <h2 class="text-base md:text-lg font-semibold mb-3 text-white">Masukkan Kode Turnamen</h2>
 
-      <button class="relative bg-gradient-to-b from-[#2f5fa8] to-[#0c2957] text-white px-6 py-2 
-                    rounded-xl font-semibold border border-[#1b3e75]
-                    shadow-[0_4px_10px_rgba(0,0,30,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)]
-                    hover:scale-105 hover:shadow-[0_0_20px_rgba(70,150,255,0.7)]
-                    transition-all duration-300 ease-in-out overflow-hidden group w-full max-w-xs md:w-auto mt-2">
-        <span class="relative z-10">Join</span>
-        <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent 
-                    translate-x-[-100%] group-hover:translate-x-[100%] 
-                    transition-transform duration-700"></span>
+      <input
+        type="text"
+        x-model="roomCode"
+        placeholder="Contoh: WAR123"
+        class="bg-white/10 border rounded-xl px-4 py-2 text-white w-full max-w-xs md:w-64 text-center mb-3 focus:outline-none"
+      />
+
+      <button
+        @click="submitJoin()"
+        :disabled="isLoading"
+        class="bg-blue-600 px-6 py-2 rounded-xl font-semibold text-white w-full max-w-xs md:w-auto"
+      >
+        <span x-show="!isLoading">Join</span>
+        <span x-show="isLoading">Menghubungkan...</span>
       </button>
+
+      <p x-show="message" :class="isError ? 'text-red-400 mt-2 text-sm' : 'text-green-300 mt-2 text-sm'" x-text="message"></p>
     </div>
   </main>
 
@@ -488,6 +491,69 @@
       }, 200);
     });
   </script>
+
+  <script>
+  function joinForm(){
+    return {
+      roomCode: '',
+      isLoading: false,
+      message: '',
+      isError: false,
+
+      async submitJoin(){
+        this.message = '';
+        this.isError = false;
+
+        const kode = (this.roomCode || '').trim();
+        if(!kode){
+          this.isError = true;
+          this.message = 'Masukkan kode turnamen.';
+          return;
+        }
+
+        this.isLoading = true;
+        try {
+          // debug: tunjukkan payload di console
+          console.log('Sending join request', { kode_room: kode });
+
+          // Mengirim sebagai form-url-encoded agar Laravel selalu terbaca
+          const body = new URLSearchParams({ kode_room: kode });
+
+          const res = await fetch('{{ route("tournament.join") }}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: body.toString()
+          });
+
+          // debug: lihat status & response text
+          const text = await res.text();
+          let data;
+          try { data = JSON.parse(text); } catch(e) { data = { raw: text }; }
+
+          console.log('Response status', res.status, data);
+
+          if (res.ok && data.redirect_url) {
+            window.location.href = data.redirect_url;
+            return;
+          }
+
+          // tampilkan pesan yang diterima server
+          this.isError = true;
+          this.message = data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : (data.raw || 'Terjadi kesalahan.'));
+        } catch (e) {
+          console.error(e);
+          this.isError = true;
+          this.message = 'Gagal terhubung ke server.';
+        } finally {
+          this.isLoading = false;
+        }
+      }
+    }
+  }
+</script>
 
 </body>
 
