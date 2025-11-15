@@ -80,6 +80,8 @@ Route::post('/tournament/lobby/{kode}/move', [SiswaTournamentController::class, 
 // [RUTE BARU]
 // Rute ini akan menampilkan halaman kuis/permainan untuk turnamen
 Route::get('/tournament/start/{id}', [SiswaTournamentController::class, 'startTournamentGame'])->name('tournament.start');
+// Endpoint untuk menerima submit jawaban turnamen dari siswa
+Route::post('/tournament/submit/{id}', [SiswaTournamentController::class, 'submitAnswers'])->name('tournament.submit');
 
 
 // Route Guru

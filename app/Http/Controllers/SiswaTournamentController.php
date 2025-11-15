@@ -78,18 +78,107 @@ class SiswaTournamentController extends Controller
         $questionsRaw = DB::table('turnamen_pertanyaan')->where('id_turnamen', $id)->get();
         $questions = [];
         foreach ($questionsRaw as $q) {
-            $choices = DB::table('turnamen_pilihan_jawaban')->where('id_pertanyaan_turnamen', $q->id)->get();
+            $choicesRaw = DB::table('turnamen_pilihan_jawaban')
+                ->where('id_pertanyaan_turnamen', $q->id)
+                ->get();
+
+            $choices = [];
+            foreach ($choicesRaw as $c) {
+                $choices[] = [
+                    'id_jawaban' => $c->id_jawaban,
+                    'teks_jawaban' => $c->teks_jawaban
+                ];
+            }
+
             $questions[] = [
                 'id' => $q->id,
-                'text' => $q->teks_pertanyaan ?? '',
-                'choices' => $choices
+                'teks_pertanyaan' => $q->teks_pertanyaan ?? '',
+                'options' => $choices
             ];
         }
 
-        return view('siswa.tournament_play', [
+        // Render full gameplay blade (the user-facing quiz UI)
+        return view('siswa.tournament_game', [
             'turnamen' => $turnamen,
             'questions' => $questions
         ]);
+    }
+
+    /**
+     * Menangani submit jawaban turnamen dari siswa.
+     */
+    public function submitAnswers(Request $req, $id)
+    {
+        $penggunaId = session('pengguna_id');
+        if (!$penggunaId) {
+            return redirect()->route('login');
+        }
+
+        // Temukan peserta untuk pengguna ini pada turnamen yang diberikan
+        $peserta = DB::table('pesertaturnamen')
+            ->where('id_turnamen', $id)
+            ->where('id_pengguna', $penggunaId)
+            ->first();
+
+        if (!$peserta) {
+            abort(403, 'Anda belum terdaftar sebagai peserta turnamen ini.');
+        }
+
+        $answersJson = $req->input('answers');
+        $timeTaken = $req->input('time_taken');
+
+        $answers = [];
+        if (!empty($answersJson)) {
+            $answers = json_decode($answersJson, true);
+            if (!is_array($answers)) {
+                $answers = [];
+            }
+        }
+
+        // Simpan jawaban dan hitung skor
+        $totalScore = 0;
+
+        DB::transaction(function () use ($peserta, $answers, &$totalScore, $timeTaken) {
+            // Hapus jawaban lama (jika ada) untuk peserta ini agar tidak duplikat
+            DB::table('turnamen_jawaban_peserta')
+                ->where('id_peserta', $peserta->id_peserta)
+                ->delete();
+
+            foreach ($answers as $questionId => $choiceId) {
+                // Cari pilihan untuk menentukan apakah benar
+                $choice = DB::table('turnamen_pilihan_jawaban')->where('id_jawaban', $choiceId)->first();
+                $isCorrect = ($choice && ($choice->adalah_benar == 1)) ? 1 : 0;
+
+                // Ambil poin soal
+                $question = DB::table('turnamen_pertanyaan')->where('id', $questionId)->first();
+                $poin = $question ? intval($question->poin_per_soal) : 0;
+
+                if ($isCorrect) {
+                    $totalScore += $poin;
+                }
+
+                DB::table('turnamen_jawaban_peserta')->insert([
+                    'id_peserta' => $peserta->id_peserta,
+                    'id_pertanyaan_turnamen' => $questionId,
+                    'id_jawaban_dipilih' => $choiceId,
+                    'waktu_jawab' => $timeTaken !== null ? intval($timeTaken) : null,
+                    'is_correct' => $isCorrect,
+                    'answered_at' => now()
+                ]);
+            }
+
+            // Update skor_akhir di tabel pesertaturnamen
+            DB::table('pesertaturnamen')
+                ->where('id_peserta', $peserta->id_peserta)
+                ->update([
+                    'skor_akhir' => $totalScore,
+                    'status' => 'finished',
+                    'updated_at' => now()
+                ]);
+        });
+
+        // Setelah submit, arahkan siswa kembali ke home (atau halaman hasil jika ada)
+        return redirect()->route('home')->with('message', 'Jawaban berhasil dikirim.');
     }
 
     /**
