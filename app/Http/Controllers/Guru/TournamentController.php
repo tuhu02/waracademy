@@ -43,7 +43,112 @@ class TournamentController extends Controller
     }
 
     /**
-     * Show detail page for a single tournament (dynamic).
+     * Store a new tournament.
+     * [DIPERBARUI]
+     */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'mode' => 'required|string|in:solo,tim', // <-- BARU
+            'maxTeamMembers' => 'nullable|integer|min:2', // <-- BARU
+            'duration' => 'required|integer|min:1',
+            'max_participants' => 'required|integer|min:1',
+            'description' => 'nullable|string',
+            'point_per_question' => 'required|integer|min:0',
+            'bonus_exp' => 'required|integer|min:0',
+            'questions' => 'required|array|min:1',
+            // 'date' => 'nullable|date', // <-- DIHAPUS
+        ]);
+
+        // Validate questions
+        foreach ($data['questions'] as $idx => $q) {
+            if (!isset($q['text']) || !is_string($q['text']) || trim($q['text']) === '') {
+                return response()->json(['message' => "Pertanyaan ke-".($idx+1)." belum diisi"], 422);
+            }
+            if (!isset($q['options']) || !is_array($q['options']) || count($q['options']) < 2) {
+                return response()->json(['message' => "Pilihan jawaban untuk pertanyaan ke-".($idx+1)." tidak valid"], 422);
+            }
+        }
+
+        // Generate unique kode_room
+        do {
+            $kode = Str::upper(Str::random(6));
+        } while (DB::table('turnamen')->where('kode_room', $kode)->exists());
+
+        $creatorId = session('pengguna_id') ?? null;
+        $now = Carbon::now();
+
+        // Use DB transaction
+        $result = DB::transaction(function () use ($data, $kode, $creatorId, $now) {
+            // Insert into `turnamen`
+            $turnamenId = DB::table('turnamen')->insertGetId([
+                'nama_turnamen' => $data['name'],
+                'kode_room' => $kode,
+                'dibuat_oleh' => $creatorId,
+                'level_minimal' => 20,
+                'status' => 'Menunggu', // <-- Default status
+                // 'tanggal_pelaksanaan' => $data['date'] ?? null, // <-- DIHAPUS
+                'mode' => $data['mode'], // <-- BARU
+                'max_team_members' => ($data['mode'] === 'tim') ? $data['maxTeamMembers'] : null, // <-- BARU
+                'durasi_pengerjaan' => $data['duration'],
+                'max_peserta' => $data['max_participants'],
+                'deskripsi' => $data['description'] ?? null,
+                'bonus_exp' => $data['bonus_exp'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], 'id_turnamen');
+
+            // Insert questions
+            foreach ($data['questions'] as $q) {
+                $poin = isset($q['poin_per_soal']) ? (int)$q['poin_per_soal'] : (int)$data['point_per_question'];
+
+                $questionId = DB::table('turnamen_pertanyaan')->insertGetId([
+                    'id_turnamen' => $turnamenId,
+                    'teks_pertanyaan' => $q['text'],
+                    'poin_per_soal' => $poin,
+                    'tingkat_kesulitan' => $q['difficulty'] ?? 'sedang',
+                    'mata_pelajaran' => $q['subject'] ?? null,
+                    'created_at' => $now,
+                ], 'id');
+
+                // Insert choices
+                foreach ($q['options'] as $optIndex => $optText) {
+                    DB::table('turnamen_pilihan_jawaban')->insert([
+                        'id_pertanyaan_turnamen' => $questionId,
+                        'teks_jawaban' => $optText,
+                        'adalah_benar' => (isset($q['correctAnswer']) && (int)$q['correctAnswer'] === $optIndex) ? 1 : 0,
+                    ]);
+                }
+            }
+
+            // Optionally add creator as participant
+            if ($creatorId) {
+                DB::table('pesertaturnamen')->insert([
+                    'id_turnamen' => $turnamenId,
+                    'id_pengguna' => $creatorId,
+                    'skor_akhir' => 0,
+                    'peringkat' => null,
+                    'joined_at' => $now,
+                    'status' => 'active',
+                    'lives_remaining' => 3,
+                ]);
+            }
+
+            return ['id' => $turnamenId, 'kode' => $kode];
+        });
+
+        return response()->json([
+            'success' => true,
+            'room_code' => $result['kode'],
+            'turnamen_id' => $result['id'],
+        ], 201);
+    }
+
+    /**
+     * TAMPILAN SHOW "PINTAR"
+     * Menampilkan Lobi, Monitor, atau Hasil berdasarkan status turnamen.
+     * [DIPERBARUI]
      */
     public function show($id)
     {
@@ -51,6 +156,32 @@ class TournamentController extends Controller
         if (!$turnamen) {
             abort(404);
         }
+
+        // ==================================================================
+        // 1. JIKA STATUS "MENUNGGU", TAMPILKAN LOBI
+        // ==================================================================
+        if ($turnamen->status === 'Menunggu') {
+            // Lobi hanya perlu daftar peserta awal
+            $participants = DB::table('pesertaturnamen')
+                ->leftJoin('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
+                ->where('pesertaturnamen.id_turnamen', $id)
+                // Pastikan 'username' adalah kolom yang benar di tabel 'pengguna'
+                ->select('pesertaturnamen.id_peserta as id', 'pengguna.username as nama')
+                ->orderBy('pesertaturnamen.joined_at', 'asc')
+                ->get();
+
+            return view('guru.tournament.show', [
+                'tournament' => $turnamen,
+                'participants' => $participants, // Kirim data peserta awal
+                'leaderboard' => [], // Kirim array kosong
+                'questions' => [], // Kirim array kosong
+            ]);
+        }
+
+        // ==================================================================
+        // 2. JIKA "BERLANGSUNG" ATAU "SELESAI", TAMPILKAN MONITOR/HASIL
+        //    (Ini adalah logika LENGKAP Anda yang sudah ada)
+        // ==================================================================
 
         // participant count
         $pesertaCount = DB::table('pesertaturnamen')->where('id_turnamen', $id)->count();
@@ -67,8 +198,8 @@ class TournamentController extends Controller
                 ->where('id_pertanyaan_turnamen', $q->id)
                 ->orderBy('id_jawaban', 'asc')
                 ->get();
-
-            // map choices to A,B,C... and find the correct key
+            
+            // map choices to A,B,C...
             $opsi = [];
             $letters = range('A', 'Z');
             $correctKey = null;
@@ -89,18 +220,18 @@ class TournamentController extends Controller
             ];
         }
 
-        // participants (basic info). join with pengguna to get username
+        // participants (detailed info)
         $participantsRaw = DB::table('pesertaturnamen')
             ->leftJoin('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
             ->where('pesertaturnamen.id_turnamen', $id)
             ->select('pesertaturnamen.*', 'pengguna.username as nama')
             ->orderBy('pesertaturnamen.joined_at', 'asc')
             ->get();
-
+            
         $participants = [];
         $participantIds = $participantsRaw->pluck('id_peserta')->filter()->all();
 
-        // Aggregate answers per participant to avoid N+1 queries
+        // Aggregate answers
         $answersAgg = [];
         if (!empty($participantIds)) {
             $answers = DB::table('turnamen_jawaban_peserta')
@@ -133,7 +264,7 @@ class TournamentController extends Controller
             $jawabanBenar = $agg['correct'] ?? 0;
             $jawabanSalah = $agg['wrong'] ?? 0;
 
-            // compute waktu_tersisa in minutes based on joined_at
+            // compute waktu_tersisa
             $joined = isset($p->joined_at) ? Carbon::parse($p->joined_at) : null;
             $elapsedMin = 0;
             if ($joined) {
@@ -154,7 +285,7 @@ class TournamentController extends Controller
             ];
         }
 
-        // simple leaderboard from peserta table (top by skor_akhir)
+        // Leaderboard
         $leaderboardRaw = DB::table('pesertaturnamen')
             ->leftJoin('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
             ->where('pesertaturnamen.id_turnamen', $id)
@@ -175,120 +306,53 @@ class TournamentController extends Controller
             ];
         }
 
-        // Normalize tournament object for view
-        $viewTournament = [
-            'id' => $turnamen->id_turnamen,
-            'nama_turnamen' => $turnamen->nama_turnamen,
-            'status' => $turnamen->status ?? 'Menunggu',
-            'tanggal_pelaksanaan' => $turnamen->tanggal_pelaksanaan,
-            'durasi' => $turnamen->durasi_pengerjaan,
-            'jumlah_soal' => count($questions),
-            'peserta_count' => $pesertaCount,
-            'max_peserta' => $turnamen->max_peserta,
-            'passing_grade' => $turnamen->passing_grade ?? null,
-            'deskripsi' => $turnamen->deskripsi,
-        ];
-
-        return view('guru.tournament.show', compact('viewTournament', 'questions', 'participants', 'leaderboard'));
-    }
-    /**
-     * Store a new tournament.
-     */
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'date' => 'nullable|date',
-            'duration' => 'required|integer|min:1',
-            'max_participants' => 'required|integer|min:1',
-            'description' => 'nullable|string',
-            'point_per_question' => 'required|integer|min:0',
-            'bonus_exp' => 'required|integer|min:0',
-            'questions' => 'required|array|min:1',
+        // Kirim semua data ke view 'show'
+        return view('guru.tournament.show', [
+            'tournament' => $turnamen,      // Data turnamen utama
+            'questions' => $questions,      // Data pertanyaan
+            'participants' => $participants,  // Data peserta terperinci
+            'leaderboard' => $leaderboard,   // Data leaderboard
         ]);
+    }
 
-        // Validate questions
-        foreach ($data['questions'] as $idx => $q) {
-            if (!isset($q['text']) || !is_string($q['text']) || trim($q['text']) === '') {
-                return response()->json(['message' => "Pertanyaan ke-".($idx+1)." belum diisi"], 422);
-            }
-            if (!isset($q['options']) || !is_array($q['options']) || count($q['options']) < 2) {
-                return response()->json(['message' => "Pilihan jawaban untuk pertanyaan ke-".($idx+1)." tidak valid"], 422);
-            }
+    /**
+     * [BARU] [AJAX] Mengambil daftar peserta untuk lobi
+     */
+    public function getParticipants($id)
+    {
+        $participants = DB::table('pesertaturnamen')
+            ->leftJoin('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
+            ->where('pesertaturnamen.id_turnamen', $id)
+            // Pastikan 'username' adalah kolom yang benar di tabel 'pengguna'
+            ->select('pesertaturnamen.id_peserta as id', 'pengguna.username as nama') 
+            ->orderBy('pesertaturnamen.joined_at', 'asc')
+            ->get();
+
+        return response()->json($participants);
+    }
+
+    /**
+     * [BARU] [AJAX] Memulai turnamen
+     */
+    public function startTournament(Request $request, $id)
+    {
+        $turnamen = DB::table('turnamen')->where('id_turnamen', $id)->first();
+
+        // Validasi: Hanya bisa dimulai jika status "Menunggu"
+        if (!$turnamen || $turnamen->status !== 'Menunggu') {
+            return response()->json(['message' => 'Turnamen sudah dimulai atau selesai.'], 422);
         }
+        
+        // --- UBAH STATUS DI DATABASE ---
+        DB::table('turnamen')
+            ->where('id_turnamen', $id)
+            ->update([
+                'status' => 'Berlangsung',
+                // Kita set 'tanggal_pelaksanaan' sebagai waktu "Mulai"
+                'tanggal_pelaksanaan' => Carbon::now() 
+            ]);
+        // -------------------------
 
-        // Generate unique kode_room for legacy `turnamen` table
-        do {
-            $kode = Str::upper(Str::random(6));
-        } while (DB::table('turnamen')->where('kode_room', $kode)->exists());
-
-        $creatorId = session('pengguna_id') ?? null;
-        $now = Carbon::now();
-
-        // Use DB transaction to ensure consistency across tables
-        $result = DB::transaction(function () use ($data, $kode, $creatorId, $now) {
-            // Insert into `turnamen` (legacy table)
-            $turnamenId = DB::table('turnamen')->insertGetId([
-                'nama_turnamen' => $data['name'],
-                'kode_room' => $kode,
-                'dibuat_oleh' => $creatorId,
-                'level_minimal' => 20,
-                'status' => 'Menunggu',
-                'tanggal_pelaksanaan' => $data['date'] ?? null,
-                'durasi_pengerjaan' => $data['duration'],
-                'max_peserta' => $data['max_participants'],
-                'deskripsi' => $data['description'] ?? null,
-                'bonus_exp' => $data['bonus_exp'],
-                'created_at' => $now,
-                'updated_at' => $now,
-            ], 'id_turnamen');
-
-            // Insert questions into `turnamen_pertanyaan`
-            foreach ($data['questions'] as $q) {
-                $poin = isset($q['poin_per_soal']) ? (int)$q['poin_per_soal'] : (int)$data['point_per_question'];
-
-                $questionId = DB::table('turnamen_pertanyaan')->insertGetId([
-                    'id_turnamen' => $turnamenId,
-                    'teks_pertanyaan' => $q['text'],
-                    'poin_per_soal' => $poin,
-                    // waktu_pengerjaan use default DB value if not provided
-                    'tingkat_kesulitan' => $q['difficulty'] ?? 'sedang',
-                    'mata_pelajaran' => $q['subject'] ?? null,
-                    'created_at' => $now,
-                ], 'id');
-
-                // Insert choices
-                foreach ($q['options'] as $optIndex => $optText) {
-                    DB::table('turnamen_pilihan_jawaban')->insert([
-                        'id_pertanyaan_turnamen' => $questionId,
-                        'teks_jawaban' => $optText,
-                        'adalah_benar' => (isset($q['correctAnswer']) && (int)$q['correctAnswer'] === $optIndex) ? 1 : 0,
-                    ]);
-                }
-            }
-
-            // Optionally add creator as participant in pesertaturnamen
-            if ($creatorId) {
-                // pesertaturnamen.status accepts enum('active','eliminated','finished')
-                // use a valid value (or omit to use DB default). Also set lives_remaining to 3.
-                DB::table('pesertaturnamen')->insert([
-                    'id_turnamen' => $turnamenId,
-                    'id_pengguna' => $creatorId,
-                    'skor_akhir' => 0,
-                    'peringkat' => null,
-                    'joined_at' => $now,
-                    'status' => 'active',
-                    'lives_remaining' => 3,
-                ]);
-            }
-
-            return ['id' => $turnamenId, 'kode' => $kode];
-        });
-
-        return response()->json([
-            'success' => true,
-            'room_code' => $result['kode'],
-            'turnamen_id' => $result['id'],
-        ], 201);
+        return response()->json(['message' => 'Turnamen berhasil dimulai!']);
     }
 }

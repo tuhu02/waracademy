@@ -530,6 +530,16 @@
 
           // debug: lihat status & response text
           const text = await res.text();
+          const contentType = (res.headers.get('content-type') || '').toLowerCase();
+
+          // Jika server merespon dengan HTML (mis. halaman error debug), jangan tampilkan seluruh HTML ke user.
+          if (contentType.includes('text/html') || text.trim().startsWith('<!doctype') || text.trim().startsWith('<html')) {
+            console.error('Server returned HTML error page:', text);
+            this.isError = true;
+            this.message = 'Terjadi kesalahan server. Silakan periksa konsol atau hubungi admin.';
+            return;
+          }
+
           let data;
           try { data = JSON.parse(text); } catch(e) { data = { raw: text }; }
 
