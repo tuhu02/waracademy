@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CSRF token for AJAX -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Buat Turnamen - War Academy</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Black+Ops+One&display=swap" rel="stylesheet">
@@ -98,6 +97,9 @@
             color: #fff;
             font-size: 14px;
             transition: all 0.3s;
+        }
+        .form-group input[type="radio"] {
+             width: auto; /* Agar radio button tidak 100% */
         }
         .form-group input:focus,
         .form-group select:focus,
@@ -214,7 +216,6 @@
 <body x-data="tournamentApp()">
     <div id="tsparticles"></div>
     
-    <!-- Sidebar -->
     <div class="sidebar">
         <div>
             <h1>War Academy</h1>
@@ -230,36 +231,48 @@
         </div>
     </div>
 
-    <!-- Main Content -->
     <div class="content">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold">Buat Turnamen Baru</h1>
             <a href="#" class="btn-secondary">← Kembali</a>
         </div>
 
-        <!-- Success Message -->
         <div x-show="showSuccess" class="alert alert-success">
             <strong>Turnamen Berhasil Dibuat!</strong><br>
             Kode Room: <span x-text="roomCode"></span><br>
             Bagikan kode ini kepada siswa untuk bergabung.
         </div>
 
-        <!-- Form Section -->
-                <form @submit.prevent="createTournament">
+        <form @submit.prevent="createTournament">
                     @csrf
-            <!-- Basic Info -->
             <div class="form-section">
                 <h3>📋 Informasi Dasar</h3>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label for="name">Nama Turnamen *</label>
-                        <input type="text" id="name" x-model="tournament.name" required placeholder="Contoh: Ujian Matematika Semester 1">
-                    </div>
-                    <div class="form-group">
-                        <label for="date">Tanggal Pelaksanaan *</label>
-                        <input type="datetime-local" id="date" x-model="tournament.date" required>
+                
+                <div class="form-group">
+                    <label for="name">Nama Turnamen *</label>
+                    <input type="text" id="name" x-model="tournament.name" required placeholder="Contoh: Ujian Matematika Semester 1">
+                </div>
+
+                <div class="form-group">
+                    <label>Mode Turnamen *</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" value="solo" x-model="tournament.mode" class="w-auto">
+                            <span>Solo (Individu)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" value="tim" x-model="tournament.mode" class="w-auto">
+                            <span>Tim</span>
+                        </label>
                     </div>
                 </div>
+
+                <div class="form-group" x-show="tournament.mode === 'tim'" x-transition>
+                    <label for="maxTeamMembers">Maksimal Anggota per Tim *</label>
+                    <input type="number" id="maxTeamMembers" x-model="tournament.maxTeamMembers" placeholder="Contoh: 3" min="2" class="w-full md:w-1/2">
+                    <p class="text-xs text-gray-400 mt-1">Hanya diisi jika mode tim (minimal 2).</p>
+                </div>
+
                 <div class="grid-2">
                     <div class="form-group">
                         <label for="duration">Durasi Pengerjaan (menit) *</label>
@@ -270,13 +283,13 @@
                         <input type="number" id="maxParticipants" x-model="tournament.maxParticipants" required placeholder="Contoh: 30" min="1">
                     </div>
                 </div>
+                
                 <div class="form-group">
                     <label for="description">Deskripsi</label>
                     <textarea id="description" x-model="tournament.description" rows="3" placeholder="Jelaskan tujuan dan aturan turnamen..."></textarea>
                 </div>
             </div>
 
-            <!-- Scoring Config -->
             <div class="form-section">
                 <h3>⚙️ Pengaturan Penilaian</h3>
                 <div class="grid-2">
@@ -291,7 +304,6 @@
                 </div>
             </div>
 
-            <!-- Questions Section -->
             <div class="form-section">
                 <h3>❓ Bank Soal Turnamen</h3>
                 <p class="text-gray-400 mb-4">Masukkan soal-soal yang akan digunakan dalam turnamen ini</p>
@@ -355,7 +367,6 @@
                 </button>
             </div>
 
-            <!-- Submit Section -->
             <div class="form-section">
                 <div class="flex justify-between items-center">
                     <div>
@@ -369,7 +380,6 @@
             </div>
         </form>
 
-        <!-- Room Code Display (shown after creation) -->
         <div x-show="showSuccess" class="form-section">
             <h3>🎉 Turnamen Berhasil Dibuat!</h3>
             <p class="text-gray-400 mb-4">Bagikan kode room ini kepada siswa untuk bergabung:</p>
@@ -390,7 +400,9 @@
             return {
                 tournament: {
                     name: '',
-                    date: '',
+                    // date: '', // <-- DIHAPUS
+                    mode: 'solo', // <-- BARU: 'solo' atau 'tim'
+                    maxTeamMembers: null, // <-- BARU: untuk menyimpan maks anggota tim
                     duration: 45,
                     maxParticipants: 30,
                     description: '',
@@ -445,10 +457,18 @@
                         return;
                     }
 
+                    // [BARU] Validasi untuk mode tim
+                    if (this.tournament.mode === 'tim' && (!this.tournament.maxTeamMembers || this.tournament.maxTeamMembers < 2)) {
+                        alert('Untuk mode tim, mohon isi maksimal anggota tim (minimal 2).');
+                        return;
+                    }
+
                     // Siapkan payload
                     const payload = {
                         name: this.tournament.name,
-                        date: this.tournament.date,
+                        // date: this.tournament.date, // <-- DIHAPUS
+                        mode: this.tournament.mode, // <-- BARU
+                        max_team_members: this.tournament.mode === 'tim' ? this.tournament.maxTeamMembers : null, // <-- BARU
                         duration: this.tournament.duration,
                         max_participants: this.tournament.maxParticipants,
                         description: this.tournament.description,

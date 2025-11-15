@@ -58,21 +58,28 @@ Route::put('/profil/update/{id}', [ProfileController::class, 'update'])->name('p
 //     return view('siswa.level');
 // })->name('level');
 
+// --- RUTE TURNAMEN SISWA (DIPERBARUI) ---
 Route::get('/tournament', function () {
     if (!session()->has('pengguna_id')) {
         return redirect()->route('login');
     }
-
     $user = Pengguna::find(session('pengguna_id'));
-
-
     return view('siswa.tournament', [
         'username' => session('pengguna_username'),
         'user' => $user
     ]);
 })->name('tournament');
 
+Route::post('/tournament/join', [SiswaTournamentController::class, 'join'])->name('tournament.join');
 
+// [PERBAIKAN] Samakan semua parameter menjadi '{kode}'
+Route::get('/tournament/lobby/{kode}', [SiswaTournamentController::class, 'lobby'])->name('tournament.lobby');
+Route::get('/tournament/lobby/{kode}/status', [SiswaTournamentController::class, 'lobbyStatus'])->name('tournament.lobby.status');
+Route::post('/tournament/lobby/{kode}/move', [SiswaTournamentController::class, 'moveTeam'])->name('tournament.move');
+
+// [RUTE BARU]
+// Rute ini akan menampilkan halaman kuis/permainan untuk turnamen
+Route::get('/tournament/start/{id}', [SiswaTournamentController::class, 'startTournamentGame'])->name('tournament.start');
 
 
 // Route Guru

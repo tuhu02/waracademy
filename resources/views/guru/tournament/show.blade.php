@@ -3,617 +3,344 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail Turnamen</title>
+    <!-- CSRF token PENTING untuk AJAX POST -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <title>Turnamen: {{ $tournament->nama_turnamen }}</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Black+Ops+One&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.1/tsparticles.bundle.min.js"></script>
 
     <style>
-        body {
-            background: radial-gradient(circle at top left, #0a192f, #020c1b);
-            color: #fff;
-            font-family: 'Poppins', sans-serif;
-            overflow-x: hidden;
-        }
-
-        .sidebar {
-            background: #0b2239;
-            width: 250px;
-            min-height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 2px 0 15px rgba(0,0,0,0.4);
-        }
-
-        .sidebar h1 {
-            font-family: 'Black Ops One', cursive;
-            font-size: 26px;
-            color: #38bdf8;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .sidebar a {
-            display: block;
-            color: #a0aec0;
-            padding: 10px 15px;
-            margin: 5px 0;
-            border-radius: 10px;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-weight: 500;
-        }
-
-        .sidebar a:hover,
-        .sidebar a.active {
-            background: #1e3a8a;
-            color: #fff;
-        }
-
-        .content {
-            margin-left: 270px;
-            padding: 40px;
-        }
-
-        .btn-primary {
-            background: #38bdf8;
-            color: #0f172a;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s;
-            display: inline-block;
-        }
-
-        .btn-primary:hover {
-            background: #0ea5e9;
-        }
-
-        .btn-secondary {
-            background: #475569;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s;
-            display: inline-block;
-        }
-
-        .btn-secondary:hover {
-            background: #334155;
-        }
-
-        .btn-danger {
-            background: #ef4444;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s;
-            display: inline-block;
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-
-        .card {
-            background: #0f172a;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
-        }
-
-        .card h3 {
-            font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #38bdf8;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .info-item {
-            background: #1e293b;
-            padding: 15px;
-            border-radius: 10px;
-            border-left: 4px solid #38bdf8;
-        }
-
-        .info-item label {
-            font-size: 12px;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .info-item .value {
-            font-size: 18px;
-            font-weight: 600;
-            color: #e2e8f0;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .status-pending {
-            background: #3b82f6;
-            color: #fff;
-        }
-
-        .status-berlangsung {
-            background: #10b981;
-            color: #fff;
-        }
-
-        .status-selesai {
-            background: #f59e0b;
-            color: #fff;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        table th {
-            text-align: left;
-            padding: 12px;
-            background: #1e293b;
-            color: #cbd5e1;
-            font-weight: 600;
-        }
-
-        table td {
-            padding: 12px;
-            border-top: 1px solid #1e293b;
-            color: #e2e8f0;
-        }
-
-        table tr:hover td {
-            background: rgba(56, 189, 248, 0.1);
-        }
-
-        .rank-1 {
-            color: #ffd700;
-        }
-
-        .rank-2 {
-            color: #c0c0c0;
-        }
-
-        .rank-3 {
-            color: #cd7f32;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
-        }
-
-        .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        #tsparticles {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            top: 0;
-            left: 0;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #1e293b;
-        }
-
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            color: #94a3b8;
-            transition: all 0.3s;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-        }
-
-        .tab:hover {
-            color: #38bdf8;
-        }
-
-        .tab.active {
-            color: #38bdf8;
-            border-bottom-color: #38bdf8;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
+        /* (Salin-tempel semua CSS dari file index/create Anda) */
+        body { background: radial-gradient(circle at top left, #0a192f, #020c1b); color: #fff; font-family: 'Poppins', sans-serif; overflow-x: hidden; }
+        .sidebar { background: #0b2239; width: 250px; min-height: 100vh; position: fixed; left: 0; top: 0; padding: 30px 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 2px 0 15px rgba(0,0,0,0.4); z-index: 100; }
+        .sidebar h1 { font-family: 'Black Ops One', cursive; font-size: 26px; color: #38bdf8; text-align: center; margin-bottom: 40px; }
+        .sidebar a, .sidebar button { display: block; color: #a0aec0; padding: 10px 15px; margin: 5px 0; border-radius: 10px; text-decoration: none; transition: all 0.3s; font-weight: 500; border: none; background: transparent; width: 100%; text-align: left; cursor: pointer; }
+        .sidebar a:hover, .sidebar button:hover, .sidebar a.active { background: #1e3a8a; color: #fff; }
+        .content { margin-left: 270px; padding: 40px; }
+        
+        .btn-primary { background: #38bdf8; color: #0f172a; padding: 10px 20px; border-radius: 10px; font-weight: 600; text-decoration: none; transition: all 0.3s; border:none; cursor: pointer; }
+        .btn-primary:hover { background: #0ea5e9; }
+        .btn-secondary { background: #475569; color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; text-decoration: none; transition: all 0.3s; border: none; cursor: pointer; }
+        .btn-secondary:hover { background: #64748b; }
+        
+        /* (Style khusus untuk Lobi/Show) */
+        .box { background: #0f172a; border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .code-display { background: #1e3a8a; padding: 20px; border-radius: 10px; text-align: center; font-size: 48px; font-weight: 800; letter-spacing: 8px; color: #38bdf8; font-family: 'Courier New', monospace; margin: 20px 0; border: 2px dashed #38bdf8; }
+        .participant-list { background: #1e293b; border-radius: 10px; padding: 20px; min-height: 200px; text-align: left; }
+        .participant-item { background: #334155; color: #e2e8f0; padding: 8px 15px; border-radius: 8px; margin-bottom: 8px; font-weight: 500; }
+        .btn-start-game { background: #22c55e; color: #fff; padding: 20px 40px; border-radius: 12px; font-size: 24px; font-weight: 800; text-transform: uppercase; transition: all 0.3s; cursor: pointer; border: none; width: 100%; }
+        .btn-start-game:hover { background: #16a34a; }
+        .btn-start-game:disabled { background: #475569; cursor: not-allowed; }
+        
+        /* (Style untuk tabel monitor/hasil) */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table th { text-align: left; padding: 10px; background: #1e293b; color: #cbd5e1; }
+        table td { padding: 10px; border-top: 1px solid #1e293b; color: #e2e8f0; }
+        table tr:hover td { background: rgba(56, 189, 248, 0.1); }
+        
+        #tsparticles { position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0; }
     </style>
 </head>
-<body>
+<body x-data="pageController()">
+
     <div id="tsparticles"></div>
 
     <div class="sidebar">
         <div>
             <h1>Guru Panel</h1>
-            <a href="#">🏠 Dashboard</a>
+            <a href="{{ route('guru.dashboard') }}">🏠 Dashboard</a>
             <a href="#">📘 Bank Soal</a>
-            <a href="#" class="active">🏆 Turnamen</a>
+            <a href="{{ route('guru.tournament.index') }}" class="active">🏆 Turnamen</a>
             <a href="#">📊 Statistik Siswa</a>
         </div>
         <div>
-            <form method="POST" action="#">
-                <button type="submit"
-                    class="block w-full text-left px-4 py-2 text-white-400 hover:text-cyan-500 transition">
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="block w-full text-left px-4 py-2 text-white-400 hover:text-cyan-500 transition">
                     🚪 Logout
                 </button>
             </form>
         </div>
     </div>
 
-    <div class="content" x-data="tournamentDetail()">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <a href="#" class="text-cyan-400 hover:underline mb-2 inline-block">← Kembali ke Daftar Turnamen</a>
-                <h1 class="text-3xl font-bold" x-text="tournament.nama_turnamen"></h1>
-            </div>
-            <div class="flex gap-2">
-                <a href="#" class="btn-secondary">✏️ Edit</a>
-                <button @click="confirmDelete()" class="btn-danger">🗑️ Hapus</button>
-            </div>
-        </div>
+    <!-- Main Content -->
+    <div class="content">
 
-        <!-- Info Utama -->
-        <div class="card">
-            <h3>Informasi Turnamen</h3>
-            <div class="info-grid">
-                <div class="info-item">
-                    <label>Status</label>
-                    <div class="value">
-                        <span class="status-badge" :class="{
-                            'status-pending': tournament.status.toLowerCase() === 'pending',
-                            'status-berlangsung': tournament.status.toLowerCase() === 'berlangsung',
-                            'status-selesai': tournament.status.toLowerCase() === 'selesai'
-                        }" x-text="tournament.status"></span>
+        {{-- ====================================================== --}}
+        {{-- 1. TAMPILAN LOBI (JIKA STATUS "MENUNGGU") --}}
+        {{-- ====================================================== --}}
+        @if($tournament->status === 'Menunggu')
+        
+            <div x-data="lobbyController()">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold">Lobi Turnamen</h1>
+                        <p class="text-gray-400 text-xl">{{ $tournament->nama_turnamen }}</p>
+                    </div>
+                    <a href="{{ route('guru.tournament.index') }}" class="btn-secondary">← Kembali ke Daftar</a>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <!-- Kolom Kiri: Kode & Tombol Mulai -->
+                    <div class="md:col-span-2">
+                        <div class="box">
+                            <h3 class="text-2xl font-bold text-cyan-400">Bagikan Kode Room Ini ke Siswa</h3>
+                            
+                            <div class="code-display" x-text="roomCode">
+                                {{ $tournament->kode_room }}
+                            </div>
+                            
+                            <button type"button" @click="copyRoomCode" class="btn-primary mb-8">
+                                📋 Salin Kode
+                            </button>
+                            
+                            <hr class="border-gray-700 my-8">
+                            
+                            <h3 class="text-2xl font-bold text-gray-300 mb-4">Mulai Turnamen</h3>
+                            <p class="text-gray-400 mb-6" x-show="participants.length === 0">
+                                Belum ada siswa yang bergabung. Turnamen bisa dimulai jika minimal 1 siswa sudah masuk.
+                            </p>
+                            
+                            <button type="button" class="btn-start-game" 
+                                @click="startGame" 
+                                :disabled="participants.length === 0 || isLoading">
+                                <span x-show="!isLoading">🚀 Mulai Turnamen Sekarang!</span>
+                                <span x-show="isLoading">Memulai...</span>
+                            </button>
+                            
+                            <p x-show="errorMessage" x-text="errorMessage" class="text-red-400 mt-4"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Kolom Kanan: Daftar Peserta -->
+                    <div class="md:col-span-1">
+                        <div class="box">
+                            <h3 class="text-2xl font-bold text-cyan-400 mb-4">
+                                Peserta Bergabung (<span x-text="participants.length">0</span>/<span>{{ $tournament->max_peserta }}</span>)
+                            </h3>
+                            
+                            <div class="participant-list">
+                                <template x-if="participants.length === 0">
+                                    <p class="text-gray-400 text-center py-16">Menunggu siswa bergabung...</p>
+                                </template>
+                                
+                                <template x-for="participant in participants" :key="participant.id">
+                                    <div class="participant-item" x-text="participant.nama"></div>
+                                </template>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="info-item">
-                    <label>Tanggal Pelaksanaan</label>
-                    <div class="value" x-text="formatDate(tournament.tanggal_pelaksanaan)"></div>
+            </div> <!-- End Lobi x-data -->
+
+        {{-- ====================================================== --}}
+        {{-- 2. TAMPILAN MONITOR (JIKA STATUS "BERLANGSUNG") --}}
+        {{-- ====================================================== --}}
+        @elseif($tournament->status === 'Berlangsung')
+        
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-green-400">Turnamen Berlangsung</h1>
+                    <p class="text-gray-400 text-xl">{{ $tournament->nama_turnamen }}</p>
                 </div>
-                <div class="info-item">
-                    <label>Durasi</label>
-                    <div class="value" x-text="tournament.durasi + ' Menit'"></div>
-                </div>
-                <div class="info-item">
-                    <label>Jumlah Soal</label>
-                    <div class="value" x-text="tournament.jumlah_soal + ' Soal'"></div>
-                </div>
-                <div class="info-item">
-                    <label>Peserta</label>
-                    <div class="value" x-text="tournament.peserta_count + ' / ' + tournament.max_peserta"></div>
-                </div>
-                <div class="info-item">
-                    <label>Passing Grade</label>
-                    <div class="value" x-text="tournament.passing_grade"></div>
-                </div>
+                <a href="{{ route('guru.tournament.index') }}" class="btn-secondary">← Kembali ke Daftar</a>
             </div>
-        </div>
-
-        <!-- Deskripsi -->
-        <div class="card" x-show="tournament.deskripsi">
-            <h3>Deskripsi</h3>
-            <p class="text-gray-300" x-text="tournament.deskripsi"></p>
-        </div>
-
-        <!-- Tabs -->
-        <div class="card">
-            <div class="tabs">
-                <div class="tab active" @click="switchTab('peserta')">👥 Peserta</div>
-                <div class="tab" @click="switchTab('leaderboard')">🏆 Leaderboard</div>
-                <div class="tab" @click="switchTab('soal')">📝 Soal</div>
-            </div>
-
-            <!-- Tab Peserta -->
-            <div class="tab-content active" id="tab-peserta">
-                <div class="mb-4 flex gap-4">
-                    <div class="info-item flex-1">
-                        <label>Sedang Mengerjakan</label>
-                        <div class="value text-blue-400" x-text="getStatusCount('mengerjakan')"></div>
-                    </div>
-                    <div class="info-item flex-1">
-                        <label>Selesai</label>
-                        <div class="value text-green-400" x-text="getStatusCount('selesai')"></div>
-                    </div>
-                    <div class="info-item flex-1">
-                        <label>Belum Mengerjakan</label>
-                        <div class="value text-gray-400" x-text="getStatusCount('belum')"></div>
-                    </div>
-                </div>
-
+            
+            <div class="box">
+                <h2 class="text-2xl font-bold text-cyan-400 mb-4">Monitor Peserta (Live)</h2>
+                <p class="text-gray-400 mb-4">Data akan diperbarui. Refresh halaman untuk data terbaru.</p>
+                
+                {{-- Ini adalah tabel 'participants' terperinci dari controller Anda --}}
                 <table>
                     <thead>
                         <tr>
-                            <th>No</th>
-                            <th>Nama Siswa</th>
-                            <th>Kelas</th>
-                            <th>Status Pengerjaan</th>
-                            <th>Progress</th>
-                            <th>Benar/Salah</th>
-                            <th>Waktu Tersisa</th>
+                            <th>Nama Peserta</th>
+                            <th>Status</th>
+                            <th>Soal Dijawab</th>
+                            <th>Benar</th>
+                            <th>Salah</th>
+                            <th>Waktu Tersisa (menit)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <template x-for="(peserta, index) in participants" :key="peserta.id">
+                        @forelse ($participants as $p)
                             <tr>
-                                <td x-text="index + 1"></td>
-                                <td>
-                                    <div class="flex items-center gap-2">
-                                        <span x-text="peserta.nama"></span>
-                                        <span class="w-2 h-2 rounded-full" 
-                                              :class="{
-                                                  'bg-blue-400 animate-pulse': peserta.status === 'mengerjakan',
-                                                  'bg-green-400': peserta.status === 'selesai',
-                                                  'bg-gray-400': peserta.status === 'belum'
-                                              }"></span>
-                                    </div>
-                                </td>
-                                <td x-text="peserta.kelas"></td>
-                                <td>
-                                    <span class="status-badge text-sm py-1 px-3" 
-                                          :class="{
-                                              'bg-blue-500': peserta.status === 'mengerjakan',
-                                              'bg-green-500': peserta.status === 'selesai',
-                                              'bg-gray-500': peserta.status === 'belum'
-                                          }">
-                                        <span x-show="peserta.status === 'mengerjakan'">⏳ Sedang Mengerjakan</span>
-                                        <span x-show="peserta.status === 'selesai'">✓ Selesai</span>
-                                        <span x-show="peserta.status === 'belum'">⊘ Belum Mulai</span>
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-24 bg-gray-700 rounded-full h-2 overflow-hidden">
-                                            <div class="bg-cyan-400 h-2 transition-all duration-500" 
-                                                 :style="`width: ${(peserta.soal_dijawab / tournament.jumlah_soal * 100)}%`"></div>
-                                        </div>
-                                        <span class="text-sm text-gray-400" x-text="`${peserta.soal_dijawab}/${tournament.jumlah_soal}`"></span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="flex items-center gap-3">
-                                        <div class="flex items-center gap-1">
-                                            <span class="text-green-400 font-bold" x-text="peserta.jawaban_benar">0</span>
-                                            <span class="text-green-400">✓</span>
-                                        </div>
-                                        <div class="flex items-center gap-1">
-                                            <span class="text-red-400 font-bold" x-text="peserta.jawaban_salah">0</span>
-                                            <span class="text-red-400">✗</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span x-show="peserta.status === 'mengerjakan'" 
-                                          class="font-mono"
-                                          :class="{
-                                              'text-red-400': peserta.waktu_tersisa <= 10,
-                                              'text-yellow-400': peserta.waktu_tersisa > 10 && peserta.waktu_tersisa <= 30,
-                                              'text-gray-300': peserta.waktu_tersisa > 30
-                                          }"
-                                          x-text="formatTime(peserta.waktu_tersisa)"></span>
-                                    <span x-show="peserta.status === 'selesai'" class="text-gray-400">-</span>
-                                    <span x-show="peserta.status === 'belum'" class="text-gray-400">90:00</span>
-                                </td>
+                                <td>{{ $p['nama'] ?? 'Siswa' }}</td>
+                                <td>{{ $p['status'] ?? '-' }}</td>
+                                <td>{{ $p['soal_dijawab'] ?? 0 }} / {{ count($questions) }}</td>
+                                <td>{{ $p['jawaban_benar'] ?? 0 }}</td>
+                                <td>{{ $p['jawaban_salah'] ?? 0 }}</td>
+                                <td>{{ $p['waktu_tersisa'] ?? '-' }}</td>
                             </tr>
-                        </template>
-                        <template x-if="participants.length === 0">
+                        @empty
                             <tr>
-                                <td colspan="7" class="text-center text-gray-400">Belum ada peserta terdaftar.</td>
+                                <td colspan="6" class="text-center text-gray-400">Belum ada data peserta...</td>
                             </tr>
-                        </template>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <!-- Tab Leaderboard -->
-            <div class="tab-content" id="tab-leaderboard">
+        {{-- ====================================================== --}}
+        {{-- 3. TAMPILAN HASIL (JIKA STATUS "SELESAI" ATAU LAINNYA) --}}
+        {{-- ====================================================== --}}
+        @else 
+        
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-yellow-400">Turnamen Selesai</h1>
+                    <p class="text-gray-400 text-xl">{{ $tournament->nama_turnamen }}</p>
+                </div>
+                <a href="{{ route('guru.tournament.index') }}" class="btn-secondary">← Kembali ke Daftar</a>
+            </div>
+            
+            <div class="box">
+                <h2 class="text-2xl font-bold text-cyan-400 mb-4">Hasil Akhir (Leaderboard)</h2>
+                
+                {{-- Ini adalah tabel 'leaderboard' dari controller Anda --}}
                 <table>
                     <thead>
                         <tr>
                             <th>Peringkat</th>
-                            <th>Nama Siswa</th>
+                            <th>Nama Peserta</th>
+                            <th>Skor Akhir</th>
                             <th>Kelas</th>
-                            <th>Skor</th>
-                            <th>Waktu Selesai</th>
-                            <th>Status</th>
+                            <th>Status Lulus</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <template x-for="(rank, index) in leaderboard" :key="rank.id">
+                        @forelse ($leaderboard as $index => $item)
                             <tr>
+                                <td>{{ $index + 1 }}</td>
+                                <td>{{ $item['nama'] ?? 'Siswa' }}</td>
+                                <td>{{ $item['skor'] ?? 0 }}</td>
+                                <td>{{ $item['kelas'] ?? '-' }}</td>
                                 <td>
-                                    <span :class="{
-                                        'rank-1': index === 0,
-                                        'rank-2': index === 1,
-                                        'rank-3': index === 2
-                                    }" x-text="index + 1"></span>
-                                    <span x-show="index === 0">🥇</span>
-                                    <span x-show="index === 1">🥈</span>
-                                    <span x-show="index === 2">🥉</span>
-                                </td>
-                                <td x-text="rank.nama"></td>
-                                <td x-text="rank.kelas"></td>
-                                <td><strong x-text="rank.skor"></strong></td>
-                                <td x-text="rank.waktu_selesai + ' menit'"></td>
-                                <td>
-                                    <span class="text-green-400" x-show="rank.lulus">✓ Lulus</span>
-                                    <span class="text-red-400" x-show="!rank.lulus">✗ Tidak Lulus</span>
+                                    @if($item['lulus'])
+                                        <span class="text-green-400">Lulus</span>
+                                    @else
+                                        <span class="text-red-400">Tidak Lulus</span>
+                                    @endif
                                 </td>
                             </tr>
-                        </template>
-                        <template x-if="leaderboard.length === 0">
+                        @empty
                             <tr>
-                                <td colspan="6" class="text-center text-gray-400">Belum ada data hasil turnamen.</td>
+                                <td colspan="5" class="text-center text-gray-400">Tidak ada data.</td>
                             </tr>
-                        </template>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
+            
+        @endif
 
-            <!-- Tab Soal -->
-            <div class="tab-content" id="tab-soal">
-                <div class="mb-4">
-                    <p class="text-gray-300">Total Soal: <strong x-text="questions.length"></strong></p>
-                </div>
-                <template x-for="(soal, index) in questions" :key="soal.id">
-                    <div class="bg-slate-800 p-4 rounded-lg mb-3">
-                        <div class="flex justify-between items-start mb-2">
-                            <h4 class="font-semibold text-cyan-400">Soal #<span x-text="index + 1"></span></h4>
-                            <span class="text-sm text-gray-400" x-text="soal.tipe"></span>
-                        </div>
-                        <p class="text-gray-200 mb-3" x-text="soal.pertanyaan"></p>
-                        <div class="space-y-2">
-                            <template x-for="(opsi, key) in soal.opsi" :key="key">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-cyan-400 font-semibold" x-text="key + '.'"></span>
-                                    <span x-text="opsi" :class="soal.jawaban_benar === key ? 'text-green-400 font-semibold' : 'text-gray-300'"></span>
-                                    <span x-show="soal.jawaban_benar === key" class="text-green-400 text-sm">✓ Jawaban Benar</span>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </template>
-                <template x-if="questions.length === 0">
-                    <p class="text-center text-gray-400">Belum ada soal untuk turnamen ini.</p>
-                </template>
-            </div>
-        </div>
     </div>
 
-        <script>
-        function tournamentDetail() {
-            return {
-                // server-provided data (normalized for the view)
-                tournament: @json($viewTournament ?? []),
-                participants: @json($participants ?? []),
-                leaderboard: @json($leaderboard ?? []),
-                questions: @json($questions ?? []),
+    <script>
+        tsParticles.load("tsparticles", {
+            // ... (Konfigurasi particles Anda) ...
+            background: { color: { value: "transparent" } }, fpsLimit: 60,
+            particles: { color: { value: "#38bdf8" }, links: { color: "#38bdf8", distance: 150, enable: true, opacity: 0.3, width: 1 }, move: { direction: "none", enable: true, outModes: { default: "bounce" }, random: false, speed: 1, straight: false }, number: { density: { enable: true, area: 800 }, value: 80 }, opacity: { value: 0.3 }, shape: { type: "circle" }, size: { value: { min: 1, max: 3 } } },
+        });
 
-                formatDate(dateStr) {
-                    if (!dateStr) return '-';
-                    const date = new Date(dateStr);
-                    return date.toLocaleDateString('id-ID', { 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                },
-                formatDateTime(dateStr) {
-                    if (!dateStr) return '-';
-                    const date = new Date(dateStr);
-                    return date.toLocaleDateString('id-ID', { 
-                        day: 'numeric', 
-                        month: 'short', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                },
-                formatTime(minutes) {
-                    const mins = Math.floor(minutes);
-                    const secs = Math.floor((minutes - mins) * 60);
-                    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                },
-                getStatusCount(status) {
-                    return this.participants.filter(p => p.status === status).length;
-                },
-                // No realtime simulation — data is loaded from the database on page render
+        // Controller Alpine utama
+        function pageController() {
+            return {
+                // state global jika perlu
+            };
+        }
+
+        // Controller khusus untuk Lobi (hanya aktif jika lobi ditampilkan)
+        function lobbyController() {
+            return {
+                // Data dari Laravel (Blade)
+                // Pastikan nama kolom ini (id_turnamen, kode_room, max_peserta)
+                // sesuai dengan tabel 'turnamen' Anda
+                tournamentId: '{{ $tournament->id_turnamen }}', 
+                roomCode: '{{ $tournament->kode_room }}',
+                maxParticipants: {{ $tournament->max_peserta }},
+                
+                // State
+                participants: @json($participants), // Muat data peserta awal dari controller
+                isLoading: false,
+                errorMessage: '',
+                pollInterval: null,
+
                 init() {
-                    // Intentionally left blank: participants/questions/leaderboard come from server-side DB
+                    // Mulai polling untuk daftar peserta
+                    this.pollInterval = setInterval(() => this.fetchParticipants(), 5000); // Cek setiap 5 detik
                 },
-                switchTab(tabName) {
-                    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                    event.target.classList.add('active');
-                    document.getElementById('tab-' + tabName).classList.add('active');
+                
+                destroy() {
+                    // Hentikan polling jika pindah halaman
+                    clearInterval(this.pollInterval);
                 },
-                confirmDelete() {
-                    if (confirm('Apakah Anda yakin ingin menghapus turnamen ini? Tindakan ini tidak dapat dibatalkan.')) {
-                        alert('Turnamen berhasil dihapus! (Demo only)');
+
+                fetchParticipants() {
+                    // URL untuk mengambil daftar peserta (Route: guru.tournament.participants)
+                    const pollUrl = `/guru/tournament/${this.tournamentId}/participants`; 
+                    
+                    fetch(pollUrl, { headers: { 'Accept': 'application/json' } })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (Array.isArray(data)) {
+                                this.participants = data;
+                            }
+                        })
+                        .catch(err => console.error('Gagal mengambil peserta:', err));
+                },
+
+                startGame() {
+                    if (this.participants.length === 0) {
+                        this.errorMessage = "Tidak bisa memulai turnamen tanpa peserta.";
+                        return;
                     }
+                    
+                    this.isLoading = true;
+                    this.errorMessage = '';
+                    
+                    // URL untuk memulai turnamen (Route: guru.tournament.start)
+                    const startUrl = `/guru/tournament/${this.tournamentId}/start`;
+                    
+                    fetch(startUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({})
+                    })
+                    .then(res => {
+                        if (!res.ok) { return res.json().then(err => Promise.reject(err)); }
+                        return res.json();
+                    })
+                    .then(data => {
+                        // SUKSES! Backend telah mengubah status
+                        this.isLoading = false;
+                        clearInterval(this.pollInterval); // Hentikan polling
+                        
+                        alert('Turnamen berhasil dimulai! Halaman akan dimuat ulang.');
+                        window.location.reload(); 
+                    })
+                    .catch(err => {
+                        // GAGAL
+                        this.isLoading = false;
+                        this.errorMessage = err.message || "Gagal memulai turnamen. Coba lagi.";
+                    });
+                },
+                
+                copyRoomCode() {
+                    navigator.clipboard.writeText(this.roomCode);
+                    alert('Kode Room berhasil disalin!');
                 }
             }
         }
-
-        // Initialize particles
-        tsParticles.load("tsparticles", {
-            background: { color: { value: "transparent" } },
-            fpsLimit: 60,
-            interactivity: {
-                events: { onHover: { enable: true, mode: "repulse" }, resize: true },
-                modes: { repulse: { distance: 100, duration: 0.4 } }
-            },
-            particles: {
-                color: { value: "#38bdf8" },
-                links: {
-                    color: "#38bdf8",
-                    distance: 150,
-                    enable: true,
-                    opacity: 0.3,
-                    width: 1
-                },
-                move: {
-                    direction: "none",
-                    enable: true,
-                    outModes: { default: "bounce" },
-                    random: false,
-                    speed: 1,
-                    straight: false
-                },
-                number: { density: { enable: true, area: 800 }, value: 80 },
-                opacity: { value: 0.3 },
-                shape: { type: "circle" },
-                size: { value: { min: 1, max: 3 } }
-            },
-            detectRetina: true
-        });
     </script>
 </body>
 </html>
