@@ -175,16 +175,18 @@
     </div>
 
     <!-- TOP 100 -->
-    <button class="relative bg-gradient-to-b from-[#2f5fa8] to-[#0c2957] text-white px-6 py-2 rounded-xl font-semibold 
-                  border border-[#1b3e75]
-                  shadow-[0_4px_10px_rgba(0,0,30,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)]
-                  hover:scale-105 hover:shadow-[0_0_20px_rgba(70,150,255,0.7)]
-                  transition-all duration-300 ease-in-out overflow-hidden group">
-      <span class="relative z-10">🏆 Top 100</span>
-      <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent 
-                    translate-x-[-100%] group-hover:translate-x-[100%] 
-                    transition-transform duration-700"></span>
-    </button>
+    <a href="{{ route('leaderboard.top100') }}">
+        <button class="relative bg-gradient-to-b from-[#2f5fa8] to-[#0c2957] text-white px-6 py-2 rounded-xl font-semibold 
+                      border border-[#1b3e75]
+                      shadow-[0_4px_10px_rgba(0,0,30,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)]
+                      hover:scale-105 hover:shadow-[0_0_20px_rgba(70,150,255,0.7)]
+                      transition-all duration-300 ease-in-out overflow-hidden group">
+          <span class="relative z-10">🏆 Top 100</span>
+          <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent 
+                        translate-x-[-100%] group-hover:translate-x-[100%] 
+                        transition-transform duration-700"></span>
+        </button>
+    </a>
   </div>
 
   <!-- Cahaya kecil -->
