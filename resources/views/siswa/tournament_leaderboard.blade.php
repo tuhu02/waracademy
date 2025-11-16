@@ -78,9 +78,7 @@
                 <tr>
                     <th>Peringkat</th>
                     <th>Nama</th>
-                    <th>Kelas</th>
                     <th>Nilai</th>
-                    <th>Waktu</th>
                 </tr>
             </thead>
 
@@ -94,14 +92,12 @@
                         <tr :class="entry.is_me ? 'highlight' : ''">
                             <td x-text="entry.rank || (index + 1)"></td>
                             <td x-text="entry.nama || 'Siswa'"></td>
-                            <td x-text="entry.kelas || '-'"></td>
                             <td x-text="entry.skor || 0"></td>
-                            <td x-text="(entry.correct || 0) + '/' + (entry.answered || 0)"></td>
                         </tr>
                     </template>
                     <template x-if="leaderboard.length === 0">
                         <tr>
-                            <td colspan="5" style="padding:20px; text-align:center; opacity:0.6;">
+                            <td colspan="3" style="padding:20px; text-align:center; opacity:0.6;">
                                 Belum ada peserta yang menyelesaikan turnamen.
                             </td>
                         </tr>
@@ -118,13 +114,11 @@
                         <tr class="{{ ($entry['is_me'] ?? false) ? 'highlight' : '' }}">
                             <td>{{ $entry['rank'] ?? $loop->iteration }}</td>
                             <td>{{ $entry['nama'] ?? 'Siswa' }}</td>
-                            <td>{{ $entry['kelas'] ?? '-' }}</td>
                             <td>{{ $entry['skor'] ?? 0 }}</td>
-                            <td>{{ ($entry['correct'] ?? 0) . '/' . ($entry['answered'] ?? 0) }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" style="padding:20px; text-align:center; opacity:0.6;">
+                            <td colspan="3" style="padding:20px; text-align:center; opacity:0.6;">
                                 Belum ada peserta yang menyelesaikan turnamen.
                             </td>
                         </tr>

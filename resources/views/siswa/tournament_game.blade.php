@@ -120,9 +120,9 @@
     <div class="relative z-10 p-6 max-w-4xl mx-auto">
         <div class="text-center mb-6">
             <h1 class="text-3xl md:text-5xl font-blackops
-                       bg-gradient-to-b from-[#e5f2ff] via-[#a3d3fa] to-[#6aa8fa]
-                       bg-clip-text text-transparent 
-                       drop-shadow-[0_0_15px_rgba(70,150,255,0.6)]">
+                        bg-gradient-to-b from-[#e5f2ff] via-[#a3d3fa] to-[#6aa8fa]
+                        bg-clip-text text-transparent 
+                        drop-shadow-[0_0_15px_rgba(70,150,255,0.6)]">
                 {{ $turnamen->nama_turnamen }}
             </h1>
         </div>
@@ -146,10 +146,55 @@
                 };
             </script>
             <div x-data="quizController(
-                                         window.tournamentData.duration, 
-                                         window.tournamentData.questions,
-                                         window.tournamentData.submitUrl
-                                      )">
+                                     window.tournamentData.duration, 
+                                     window.tournamentData.questions,
+                                     window.tournamentData.submitUrl
+                                 )">
+
+                <div x-data="{ showNavMenu: false }" class="fixed top-4 left-4 z-40" x-cloak>
+                    <button @click="showNavMenu = !showNavMenu"
+                        class="btn-nav flex items-center bg-white/10 border border-[#6aa8fa]/40 rounded-xl px-4 py-2 text-white font-medium shadow-md hover:bg-white/20 backdrop-blur-sm transition">
+                        <i class="fa-solid fa-list-ol mr-2"></i>
+                        <span class="font-semibold">Daftar Soal</span>
+                    </button>
+    
+                    <div x-show="showNavMenu" @click.away="showNavMenu = false" x-transition
+                        class="absolute top-full left-0 mt-2 w-72 max-h-96 overflow-y-auto bg-black/60 backdrop-blur-lg border border-blue-400/30 rounded-xl shadow-2xl p-4">
+    
+                        <p class="text-sm text-gray-300 mb-3 font-semibold">Lompat ke soal:</p>
+    
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="(q, idx) in questions" :key="idx">
+                                <button @click="currentQuestionIndex = idx; showNavMenu = false"
+                                    :class="{
+                                        'bg-cyan-300 text-black': currentQuestionIndex === idx,
+                                        'bg-green-600 text-white': answers[q.id] !== undefined && currentQuestionIndex !== idx,
+                                        'bg-white/10 text-white': answers[q.id] === undefined && currentQuestionIndex !== idx
+                                    }"
+                                    class="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-semibold border border-white/20 hover:scale-105 transition">
+                                    <span x-text="idx + 1"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                {{-- Menghapus navigasi nomor soal yang di tengah --}}
+                {{-- <nav class="mb-4" x-cloak>
+                    <div class="flex flex-wrap gap-2 justify-center">
+                        <template x-for="(q, idx) in questions" :key="idx">
+                            <button
+                                @click="currentQuestionIndex = idx"
+                                :class="{
+                                    'bg-cyan-300 text-black': currentQuestionIndex === idx,
+                                    'bg-green-600 text-white': answers[q.id] !== undefined && currentQuestionIndex !== idx,
+                                    'bg-white/10 text-white': answers[q.id] === undefined && currentQuestionIndex !== idx
+                                }"
+                                class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold border border-white/20 hover:scale-105 transition">
+                                <span x-text="idx + 1"></span>
+                            </button>
+                        </template>
+                    </div>
+                </nav> --}}
                 <div x-show="!isFinished" x-cloak>
                     <div
                         class="bg-black/20 backdrop-blur-lg border border-blue-400/30 rounded-xl shadow-2xl overflow-hidden">
@@ -345,7 +390,6 @@
         }
     </script>
     
-    <!-- Footer music controls (allow mute/unmute and volume on tournament game) -->
     <div x-data="{ showSetting: false, volume: 0.5, muted: false }" x-init="(() => {
             const savedVol = localStorage.getItem('volume');
             const savedMute = localStorage.getItem('muted');
