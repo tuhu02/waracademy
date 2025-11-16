@@ -12,10 +12,6 @@
     <style>
         /* ... (Semua CSS Anda tetap sama) ... */
         body { background: radial-gradient(circle at top left, #0a192f, #020c1b); color: #fff; font-family: 'Poppins', sans-serif; overflow-x: hidden; }
-        .sidebar { background: #0b2239; width: 250px; min-height: 100vh; position: fixed; left: 0; top: 0; padding: 30px 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 2px 0 15px rgba(0,0,0,0.4); }
-        .sidebar h1 { font-family: 'Black Ops One', cursive; font-size: 26px; color: #38bdf8; text-align: center; margin-bottom: 40px; }
-        .sidebar a { display: block; color: #a0aec0; padding: 10px 15px; margin: 5px 0; border-radius: 10px; text-decoration: none; transition: all 0.3s; font-weight: 500; }
-        .sidebar a:hover, .sidebar a.active { background: #1e3a8a; color: #fff; }
         .content { margin-left: 270px; padding: 40px; }
         .btn-primary { background: #38bdf8; color: #0f172a; padding: 10px 20px; border-radius: 10px; font-weight: 600; text-decoration: none; transition: all 0.3s; }
         .btn-primary:hover { background: #0ea5e9; }
@@ -32,13 +28,7 @@
     <div id="tsparticles"></div>
 
     <div class="sidebar">
-        <div>
-            <h1>Guru Panel</h1>
-            <a href="{{ route('guru.dashboard') }}">🏠 Dashboard</a>
-            <a href="#">📘 Bank Soal</a>
-            <a href="{{ route('guru.tournament.index') }}" class="active">🏆 Turnamen</a>
-            <a href="#">📊 Statistik Siswa</a>
-        </div>
+        @include('guru.components.sidebar-guru')
         <div>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
