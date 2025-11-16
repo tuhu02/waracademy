@@ -742,4 +742,4 @@ class SiswaTournamentController extends Controller
             }
         }
     }
-}
+}   

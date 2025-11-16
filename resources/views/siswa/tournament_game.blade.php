@@ -344,6 +344,52 @@
             }
         }
     </script>
+    
+    <!-- Footer music controls (allow mute/unmute and volume on tournament game) -->
+    <div x-data="{ showSetting: false, volume: 0.5, muted: false }" x-init="(() => {
+            const savedVol = localStorage.getItem('volume');
+            const savedMute = localStorage.getItem('muted');
+            const audio = document.getElementById('bgMusic');
+            if (audio) {
+                if (savedVol) { audio.volume = parseFloat(savedVol); volume = audio.volume; }
+                if (savedMute !== null) { audio.muted = (savedMute === 'true'); muted = audio.muted; }
+
+                const tryPlay = () => audio.play().catch(() => {});
+                if (!audio.muted && !muted) { tryPlay(); }
+
+                const unlock = () => {
+                    if (!muted) { audio.muted = false; tryPlay(); }
+                    window.removeEventListener('click', unlock);
+                    window.removeEventListener('touchstart', unlock);
+                };
+                window.addEventListener('click', unlock, { once: true });
+                window.addEventListener('touchstart', unlock, { once: true });
+            }
+    })()"
+    class="fixed left-4 bottom-4 z-50">
+
+        <div class="relative">
+            <button x-show="!showSetting" @click="showSetting = true" x-transition.opacity.duration.200ms class="bg-white/10 border border-[#6aa8fa]/40 rounded-xl px-3 py-2 text-white font-medium shadow-md hover:bg-white/20 backdrop-blur-sm transition">
+                ⚙️
+            </button>
+
+            <div x-show="showSetting" @click.away="showSetting = false" x-transition class="absolute bottom-full left-0 mb-4 w-64 bg-white/95 text-gray-800 rounded-2xl shadow-2xl border border-gray-300/70 p-4 text-sm">
+                <h3 class="font-semibold text-gray-700 mb-2">🎵 Pengaturan Suara</h3>
+
+                <div class="flex justify-between items-center mb-3">
+                    <span>Musik</span>
+                    <button @click="muted = !muted; const audio = document.getElementById('bgMusic'); if (audio) { audio.muted = muted; if(muted){ audio.pause(); } else { audio.play().catch(() => {}); } } localStorage.setItem('muted', muted);"
+                        class="px-3 py-1 rounded-md font-semibold transition text-xs"
+                        :class="muted ? 'bg-red-500 text-white' : 'bg-green-500 text-white'">
+                        <span x-text="muted ? 'Mati' : 'Hidup'"></span>
+                    </button>
+                </div>
+
+                <label class="block mb-1 text-gray-700 font-medium">Volume</label>
+                <input type="range" min="0" max="1" step="0.01" x-model="volume" @input="const audio = document.getElementById('bgMusic'); if (audio) { audio.volume = volume; } localStorage.setItem('volume', volume);" class="w-full accent-blue-600 cursor-pointer">
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
