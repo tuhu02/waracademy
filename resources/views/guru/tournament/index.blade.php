@@ -27,22 +27,7 @@
 <body>
     <div id="tsparticles"></div>
 
-<<<<<<< HEAD
     @include('guru.components.sidebar-guru')
-=======
-    <div class="sidebar">
-        @include('guru.components.sidebar-guru')
-        <div>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit"
-                    class="block w-full text-left px-4 py-2 text-white-400 hover:text-cyan-500 transition">
-                    🚪 Logout
-                </button>
-            </form>
-        </div>
-    </div>
->>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c
 
     <div class="content">
         <div class="flex justify-between items-center mb-6">

@@ -72,9 +72,7 @@
                     <tr>
                         <th class="py-3 font-semibold">Peringkat</th>
                         <th class="py-3 font-semibold">Nama</th>
-                        <th class="py-3 font-semibold">Kelas</th>
                         <th class="py-3 font-semibold">Nilai</th>
-                        <th class="py-3 font-semibold">Waktu</th>
                     </tr>
                 </thead>
 
@@ -85,9 +83,7 @@
                         <tr :class="entry.is_me ? 'bg-[#3d6fc0]/80 shadow-[0_0_10px_rgba(70,150,255,0.8)] font-bold' : 'odd:bg-[#1b2636]/40 even:bg-[#16202e]/40'">
                             <td class="py-3" x-text="entry.rank || (index + 1)"></td>
                             <td class="py-3" x-text="entry.nama || 'Siswa'"></td>
-                            <td class="py-3" x-text="entry.kelas || '-'"></td>
                             <td class="py-3" x-text="entry.skor || 0"></td>
-                            <td class="py-3" x-text="(entry.correct || 0) + '/' + (entry.answered || 0)"></td>
                         </tr>
                     </template>
 
@@ -107,7 +103,6 @@
                             : 'odd:bg-[#1b2636]/40 even:bg-[#16202e]/40' }}">
                             <td class="py-3">{{ $entry['rank'] ?? $loop->iteration }}</td>
                             <td class="py-3">{{ $entry['nama'] ?? 'Siswa'}}</td>
-                            <td class="py-3">{{ $entry['kelas'] ?? '-' }}</td>
                             <td class="py-3">{{ $entry['skor'] ?? 0}}</td>
                             <td class="py-3">{{ ($entry['correct'] ?? 0) . '/' . ($entry['answered'] ?? 0) }}</td>
                         </tr>

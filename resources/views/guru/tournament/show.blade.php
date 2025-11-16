@@ -45,7 +45,8 @@
 
     <div id="tsparticles"></div>
 
-    <div class="sidebar">
+    @include('guru.components.sidebar-guru')
+    <!-- <div class="sidebar">
         <div>
             <h1>Guru Panel</h1>
             <a href="{{ route('guru.dashboard') }}">🏠 Dashboard</a>
@@ -61,7 +62,7 @@
                 </button>
             </form>
         </div>
-    </div>
+    </div> -->
 
     <!-- Main Content -->
     <div class="content">
@@ -205,8 +206,6 @@
                             <th>Peringkat</th>
                             <th>Nama Peserta</th>
                             <th>Skor Akhir</th>
-                            <th>Kelas</th>
-                            <th>Status Lulus</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -215,14 +214,6 @@
                                 <td>{{ $index + 1 }}</td>
                                 <td>{{ $item['nama'] ?? 'Siswa' }}</td>
                                 <td>{{ $item['skor'] ?? 0 }}</td>
-                                <td>{{ $item['kelas'] ?? '-' }}</td>
-                                <td>
-                                    @if($item['lulus'])
-                                        <span class="text-green-400">Lulus</span>
-                                    @else
-                                        <span class="text-red-400">Tidak Lulus</span>
-                                    @endif
-                                </td>
                             </tr>
                         @empty
                             <tr>

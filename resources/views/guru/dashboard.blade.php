@@ -104,10 +104,6 @@
 <body>
     <div id="tsparticles"></div>
 
-<<<<<<< HEAD
-=======
-    {{-- Sidebar --}}
->>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c
     @include('guru.components.sidebar-guru')
 
     <div class="content">

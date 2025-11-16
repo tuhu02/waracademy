@@ -48,24 +48,15 @@
             🏠 Dashboard
         </a>
 
-<<<<<<< HEAD
         <a href="{{ route('guru.soal.index') }}"
             class="{{ request()->routeIs('guru.soal.index') ? 'active' : '' }}">
             📘 Bank Soal
         </a>
-=======
-        <a href="#">📘 Bank Soal</a>
->>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c
 
         <a href="{{ route('guru.tournament.index') }}"
            class="{{ request()->routeIs('guru.tournament.index') ? 'active' : '' }}">
             🏆 Turnamen
         </a>
-<<<<<<< HEAD
-=======
-
-        <a href="#">📊 Statistik Siswa</a>
->>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c
     </div>
 
     <div>
@@ -77,8 +68,4 @@
             </button>
         </form>
     </div>
-<<<<<<< HEAD
 </div>
-=======
-</div>
->>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c

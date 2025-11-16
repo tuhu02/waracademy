@@ -219,11 +219,8 @@ Route::get('/level/{id}/start', [LevelController::class, 'start'])->name('level.
 // submit jawaban → proses hasil
 Route::post('/level/{id}/submit', [LevelController::class, 'submit'])->name('level.submit');
 
-<<<<<<< HEAD
 Route::prefix('guru')->group(function () {
     Route::get('/bank-soal', [BankSoalController::class, 'index'])->name('guru.soal.index');
     Route::get('/bank-soal/detail/{id}', [BankSoalController::class, 'detail'])->name('guru.soal.detail');
     Route::get('/bank-soal/data', [BankSoalController::class, 'data'])->name('guru.soal.data');
 });
-=======
->>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c

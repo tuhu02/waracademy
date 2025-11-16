@@ -18,10 +18,6 @@
             font-family: 'Poppins', sans-serif;
             overflow-x: hidden;
         }
-<<<<<<< HEAD
-
-=======
->>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c
         .content {
             margin-left: 270px;
             padding: 40px;
@@ -205,11 +201,7 @@
 <body x-data="tournamentApp()">
     <div id="tsparticles"></div>
 
-<<<<<<< HEAD
     @include('guru.components.sidebar-guru')
-=======
-     @include('guru.components.sidebar-guru')
->>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c
 
     <div class="content">
         <div class="flex justify-between items-center mb-6">
@@ -396,11 +388,11 @@
             <h3>🎉 Turnamen Berhasil Dibuat!</h3>
             <p class="text-gray-400 mb-4">Bagikan kode room ini kepada siswa untuk bergabung:</p>
             <div class="code-display" x-text="roomCode"></div>
-            <div class="flex gap-3 justify-center">
+                <div class="flex gap-3 justify-center">
                 <button type="button" @click="copyRoomCode" class="btn-primary">
                     📋 Salin Kode
                 </button>
-                <a href="#" class="btn-secondary">
+                <a :href="roomLink" x-show="showSuccess" class="btn-secondary">
                     📊 Lihat Dashboard Turnamen
                 </a>
             </div>
@@ -491,6 +483,7 @@
                     ]
                 },
                 roomCode: '',
+                roomLink: '',
                 showSuccess: false,
                 bankSoal: [],       // ← daftar soal dari database Laravel
                 showBankSoal: false,
@@ -674,10 +667,20 @@
                             return res.json();
                         })
                         .then(json => {
-                            // Backend menyediakan room_code
+                            // Backend menyediakan room_code dan id turnamen
                             this.roomCode = json.room_code || this.generateRoomCode();
+                            this.roomLink = json.turnamen_id ? ('/guru/tournament/' + json.turnamen_id) : '#';
                             this.showSuccess = true;
                             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                            // Redirect teacher to the show page so they immediately see
+                            // the created tournament, questions and answer keys.
+                            if (json.turnamen_id) {
+                                // short delay so flash message is visible briefly
+                                setTimeout(() => {
+                                    window.location.href = this.roomLink;
+                                }, 700);
+                            }
                         })
                         .catch(err => {
                             console.error('Error creating tournament:', err);
