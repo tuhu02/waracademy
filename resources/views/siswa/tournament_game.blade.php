@@ -80,7 +80,10 @@
 
     <div class="relative z-10 p-6 max-w-4xl mx-auto">
         <div class="text-center mb-6">
-            <h1 class="text-3xl md:text-5xl font-blackops bg-gradient-to-b from-[#e5f2ff] via-[#a3d3fa] to-[#6aa8fa] bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(70,150,255,0.6)]">
+            <h1 class="text-3xl md:text-5xl font-blackops
+                        bg-gradient-to-b from-[#e5f2ff] via-[#a3d3fa] to-[#6aa8fa]
+                        bg-clip-text text-transparent 
+                        drop-shadow-[0_0_15px_rgba(70,150,255,0.6)]">
                 {{ $turnamen->nama_turnamen }}
             </h1>
         </div>
@@ -101,16 +104,12 @@
                 window.tournamentData = {
                     duration: {{ $turnamen->durasi_pengerjaan }},
                     questions: @json(array_values($questions)),
-                    
-                    // SEPAKAN DENGAN ROUTE
                     submitQuestionUrl: '{{ route('tournament.submit.question', ['id' => $turnamen->id_turnamen]) }}',
                     submitAllUrl: '{{ route('tournament.submit.all', ['id' => $turnamen->id_turnamen]) }}',
-
                     mode: '{{ $turnamen->mode }}'
                 };
-                console.log("Alpine ready:", this);
+                console.log("Alpine ready, tournamentData:", window.tournamentData);
 
-                console.log('tournamentData', window.tournamentData);
             </script>
 
 
@@ -479,5 +478,50 @@
             };
         }
     </script>
+    
+    <div x-data="{ showSetting: false, volume: 0.5, muted: false }" x-init="(() => {
+            const savedVol = localStorage.getItem('volume');
+            const savedMute = localStorage.getItem('muted');
+            const audio = document.getElementById('bgMusic');
+            if (audio) {
+                if (savedVol) { audio.volume = parseFloat(savedVol); volume = audio.volume; }
+                if (savedMute !== null) { audio.muted = (savedMute === 'true'); muted = audio.muted; }
+
+                const tryPlay = () => audio.play().catch(() => {});
+                if (!audio.muted && !muted) { tryPlay(); }
+
+                const unlock = () => {
+                    if (!muted) { audio.muted = false; tryPlay(); }
+                    window.removeEventListener('click', unlock);
+                    window.removeEventListener('touchstart', unlock);
+                };
+                window.addEventListener('click', unlock, { once: true });
+                window.addEventListener('touchstart', unlock, { once: true });
+            }
+    })()"
+    class="fixed left-4 bottom-4 z-50">
+
+        <div class="relative">
+            <button x-show="!showSetting" @click="showSetting = true" x-transition.opacity.duration.200ms class="bg-white/10 border border-[#6aa8fa]/40 rounded-xl px-3 py-2 text-white font-medium shadow-md hover:bg-white/20 backdrop-blur-sm transition">
+                ⚙️
+            </button>
+
+            <div x-show="showSetting" @click.away="showSetting = false" x-transition class="absolute bottom-full left-0 mb-4 w-64 bg-white/95 text-gray-800 rounded-2xl shadow-2xl border border-gray-300/70 p-4 text-sm">
+                <h3 class="font-semibold text-gray-700 mb-2">🎵 Pengaturan Suara</h3>
+
+                <div class="flex justify-between items-center mb-3">
+                    <span>Musik</span>
+                    <button @click="muted = !muted; const audio = document.getElementById('bgMusic'); if (audio) { audio.muted = muted; if(muted){ audio.pause(); } else { audio.play().catch(() => {}); } } localStorage.setItem('muted', muted);"
+                        class="px-3 py-1 rounded-md font-semibold transition text-xs"
+                        :class="muted ? 'bg-red-500 text-white' : 'bg-green-500 text-white'">
+                        <span x-text="muted ? 'Mati' : 'Hidup'"></span>
+                    </button>
+                </div>
+
+                <label class="block mb-1 text-gray-700 font-medium">Volume</label>
+                <input type="range" min="0" max="1" step="0.01" x-model="volume" @input="const audio = document.getElementById('bgMusic'); if (audio) { audio.volume = volume; } localStorage.setItem('volume', volume);" class="w-full accent-blue-600 cursor-pointer">
+            </div>
+        </div>
+    </div>
 </body>
 </html>

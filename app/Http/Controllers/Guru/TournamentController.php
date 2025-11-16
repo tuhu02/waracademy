@@ -34,8 +34,21 @@ class TournamentController extends Controller
     {
         $turnamens = DB::table('turnamen')
             ->leftJoin('pesertaturnamen', 'turnamen.id_turnamen', '=', 'pesertaturnamen.id_turnamen')
-            ->select('turnamen.*', DB::raw('COUNT(pesertaturnamen.id_peserta) as peserta_count'))
-            ->groupBy('turnamen.id_turnamen')
+            ->select(
+                'turnamen.id_turnamen',
+                'turnamen.nama_turnamen',
+                'turnamen.max_peserta',
+                'turnamen.status',
+                'turnamen.created_at',
+                DB::raw('COUNT(pesertaturnamen.id_peserta) as peserta_count')
+            )
+            ->groupBy(
+                'turnamen.id_turnamen',
+                'turnamen.nama_turnamen',
+                'turnamen.max_peserta',
+                'turnamen.status',
+                'turnamen.created_at'
+            )
             ->orderBy('turnamen.created_at', 'desc')
             ->get();
 

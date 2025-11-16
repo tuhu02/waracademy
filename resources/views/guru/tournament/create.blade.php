@@ -18,54 +18,6 @@
             font-family: 'Poppins', sans-serif;
             overflow-x: hidden;
         }
-
-        .sidebar {
-            background: #0b2239;
-            width: 250px;
-            min-height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.4);
-            z-index: 100;
-        }
-
-        .sidebar h1 {
-            font-family: 'Black Ops One', cursive;
-            font-size: 26px;
-            color: #38bdf8;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .sidebar a,
-        .sidebar button {
-            display: block;
-            color: #a0aec0;
-            padding: 10px 15px;
-            margin: 5px 0;
-            border-radius: 10px;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-weight: 500;
-            border: none;
-            background: transparent;
-            width: 100%;
-            text-align: left;
-            cursor: pointer;
-        }
-
-        .sidebar a:hover,
-        .sidebar button:hover,
-        .sidebar a.active {
-            background: #1e3a8a;
-            color: #fff;
-        }
-
         .content {
             margin-left: 270px;
             padding: 40px;
@@ -249,25 +201,12 @@
 <body x-data="tournamentApp()">
     <div id="tsparticles"></div>
 
-    <div class="sidebar">
-        <div>
-            <h1>War Academy</h1>
-            <a href="#">🏠 Dashboard</a>
-            <a href="#">📘 Bank Soal</a>
-            <a href="#" class="active">🏆 Turnamen</a>
-            <a href="#">📊 Statistik Siswa</a>
-        </div>
-        <div>
-            <button type="button" class="text-red-400 hover:text-red-500">
-                🚪 Logout
-            </button>
-        </div>
-    </div>
+    @include('guru.components.sidebar-guru')
 
     <div class="content">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold">Buat Turnamen Baru</h1>
-            <a href="#" class="btn-secondary">← Kembali</a>
+            <a href="{{ route('guru.tournament.index') }}" class="btn-secondary">← Kembali</a>
         </div>
 
         <div x-show="showSuccess" class="alert alert-success">
@@ -425,6 +364,9 @@
                 <button type="button" @click="addQuestion" class="btn-secondary mt-4">
                     ➕ Tambah Soal
                 </button>
+                <button type="button" @click="openBankSoalModal" class="btn-primary mt-4">
+                    📚 Ambil dari Bank Soal
+                </button>
             </div>
 
             <div class="form-section">
@@ -446,13 +388,71 @@
             <h3>🎉 Turnamen Berhasil Dibuat!</h3>
             <p class="text-gray-400 mb-4">Bagikan kode room ini kepada siswa untuk bergabung:</p>
             <div class="code-display" x-text="roomCode"></div>
-            <div class="flex gap-3 justify-center">
+                <div class="flex gap-3 justify-center">
                 <button type="button" @click="copyRoomCode" class="btn-primary">
                     📋 Salin Kode
                 </button>
-                <a href="#" class="btn-secondary">
+                <a :href="roomLink" x-show="showSuccess" class="btn-secondary">
                     📊 Lihat Dashboard Turnamen
                 </a>
+            </div>
+        </div>
+
+        <div x-show="showBankSoal"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            x-transition.opacity>
+            
+            <div class="bg-[#0f172a] w-full max-w-3xl rounded-xl p-6 shadow-xl border border-slate-700"
+                x-transition.scale.origin.top>
+                
+                <h2 class="text-xl font-bold mb-5 text-cyan-400 text-center">
+                    Pilih Soal dari Bank Soal
+                </h2>
+
+                <div class="max-h-[65vh] overflow-y-auto pr-2 space-y-4">
+
+                    <template x-for="(soal, sIndex) in bankSoal" :key="sIndex">
+                        <div class="border border-slate-700 bg-[#111c2f] p-5 rounded-lg shadow-sm hover:border-cyan-400/40 transition">
+
+                            <p class="font-semibold text-gray-200 leading-relaxed"
+                            x-text="soal.text"></p>
+
+                            <ul class="ml-4 mt-3 text-gray-400 text-sm space-y-1">
+                                <template x-for="(op, oi) in soal.options" :key="oi">
+                                    <li class="flex items-start gap-1">
+
+                                        <span class="mt-[2px]">•</span>
+
+                                        <span x-text="op"></span>
+
+                                        <span class="text-green-400 font-medium ml-1"
+                                            x-show="soal.correctAnswer === oi">
+                                            (benar)
+                                        </span>
+                                    </li>
+                                </template>
+                            </ul>
+
+                            <div class="flex justify-end mt-4">
+                                <button type="button"
+                                    @click="addFromBank(soal)"
+                                    class="bg-cyan-500 hover:bg-cyan-400 text-black px-4 py-2 rounded-lg font-semibold shadow transition">
+                                    ➕ Gunakan Soal Ini
+                                </button>
+                            </div>
+
+                        </div>
+                    </template>
+
+                </div>
+
+                <div class="flex justify-end mt-6">
+                    <button class="bg-red-500 hover:bg-red-400 text-white px-4 py-2 rounded-lg font-semibold shadow transition"
+                            @click="closeBankSoalModal">
+                        Tutup
+                    </button>
+                </div>
+
             </div>
         </div>
     </div>
@@ -483,7 +483,10 @@
                     ]
                 },
                 roomCode: '',
+                roomLink: '',
                 showSuccess: false,
+                bankSoal: [],       // ← daftar soal dari database Laravel
+                showBankSoal: false,
 
                 addQuestion() {
                     this.tournament.questions.push({
@@ -499,6 +502,50 @@
                     if (this.tournament.questions.length > 1) {
                         this.tournament.questions.splice(index, 1);
                     }
+                },
+
+                openBankSoalModal() {
+                    this.showBankSoal = true;
+
+                    // Ambil bank soal dari Laravel via API
+                    fetch("{{ route('guru.soal.json') }}")
+                        .then(r => r.json())
+                        .then(data => {
+                            this.bankSoal = data;
+                        });
+                },
+
+                closeBankSoalModal() {
+                    this.showBankSoal = false;
+                },
+
+                addFromBank(soal) {
+                    let emptyIndex = this.tournament.questions.findIndex(q =>
+                        (!q.text || q.text.trim() === '') &&
+                        (!q.options || q.options.every(op => !op || op.trim() === ''))
+                    );
+
+                    if (emptyIndex !== -1) {
+                        this.tournament.questions[emptyIndex] = {
+                            text: soal.text,
+                            options: [...soal.options],
+                            correctAnswer: soal.correctAnswer,
+                            difficulty: soal.difficulty,
+                            subject: soal.subject,
+                        };
+                        this.showBankSoal = false;
+                        return;
+                    }
+
+                    this.tournament.questions.push({
+                        text: soal.text,
+                        options: soal.options,
+                        correctAnswer: soal.correctAnswer,
+                        difficulty: soal.difficulty,
+                        subject: soal.subject,
+                    });
+
+                    this.showBankSoal = false;
                 },
 
                 updateMaxTeams() {
@@ -620,10 +667,20 @@
                             return res.json();
                         })
                         .then(json => {
-                            // Backend menyediakan room_code
+                            // Backend menyediakan room_code dan id turnamen
                             this.roomCode = json.room_code || this.generateRoomCode();
+                            this.roomLink = json.turnamen_id ? ('/guru/tournament/' + json.turnamen_id) : '#';
                             this.showSuccess = true;
                             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                            // Redirect teacher to the show page so they immediately see
+                            // the created tournament, questions and answer keys.
+                            if (json.turnamen_id) {
+                                // short delay so flash message is visible briefly
+                                setTimeout(() => {
+                                    window.location.href = this.roomLink;
+                                }, 700);
+                            }
                         })
                         .catch(err => {
                             console.error('Error creating tournament:', err);
@@ -679,5 +736,4 @@
         });
     </script>
 </body>
-
 </html>

@@ -58,6 +58,33 @@ class ProfileController extends Controller
             ->where('id_pengguna', $id)
             ->get();
 
+        // Hitung peringkat untuk tiap riwayat turnamen
+        // Untuk setiap peserta, ambil daftar peserta turnamen yang sama
+        // diurutkan berdasarkan skor_akhir desc, updated_at asc, lalu temukan indeksnya.
+        foreach ($riwayatTurnamen as $rt) {
+            try {
+                $participantsOrdered = DB::table('pesertaturnamen')
+                    ->where('id_turnamen', $rt->id_turnamen)
+                    ->orderByDesc('skor_akhir')
+                    ->orderBy('updated_at', 'asc')
+                    ->pluck('id_peserta')
+                    ->toArray();
+
+                // Temukan posisi peserta ini
+                $pos = array_search($rt->id_peserta, $participantsOrdered, true);
+                if ($pos === false) {
+                    $rt->peringkat = null;
+                    $rt->total_participants = count($participantsOrdered);
+                } else {
+                    $rt->peringkat = $pos + 1; // array index -> rank
+                    $rt->total_participants = count($participantsOrdered);
+                }
+            } catch (\Exception $e) {
+                // Jika terjadi error (mis. kolom tidak ada), biarkan peringkat null
+                $rt->peringkat = null;
+            }
+        }
+
         $jumlahTurnamen = $riwayatTurnamen->count();
 
         // Daftar avatar statis (sesuaikan dengan file di public/avatars)

@@ -164,7 +164,13 @@
                   <tr class="border-t border-blue-300/30">
                     <td class="p-2">{{ optional($p->turnamen)->nama_turnamen ?? '-' }}</td>
                     <td class="p-2">{{ optional($p->turnamen)->kode_room ?? '-' }}</td>
-                    <td class="p-2">{{ $p->peringkat ?? '-' }}</td>
+                    <td class="p-2">
+                      @if(isset($p->peringkat) && $p->peringkat !== null)
+                        {{ $p->peringkat }} / {{ $p->total_participants ?? '-' }}
+                      @else
+                        -
+                      @endif
+                    </td>
                   </tr>
                 @endforeach
               </tbody>
