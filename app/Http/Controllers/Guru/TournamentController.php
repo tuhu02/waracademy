@@ -64,10 +64,10 @@ class TournamentController extends Controller
         // Validate questions
         foreach ($data['questions'] as $idx => $q) {
             if (!isset($q['text']) || !is_string($q['text']) || trim($q['text']) === '') {
-                return response()->json(['message' => "Pertanyaan ke-".($idx+1)." belum diisi"], 422);
+                return response()->json(['message' => "Pertanyaan ke-" . ($idx + 1) . " belum diisi"], 422);
             }
             if (!isset($q['options']) || !is_array($q['options']) || count($q['options']) < 2) {
-                return response()->json(['message' => "Pilihan jawaban untuk pertanyaan ke-".($idx+1)." tidak valid"], 422);
+                return response()->json(['message' => "Pilihan jawaban untuk pertanyaan ke-" . ($idx + 1) . " tidak valid"], 422);
             }
         }
 
@@ -101,7 +101,7 @@ class TournamentController extends Controller
 
             // Insert questions
             foreach ($data['questions'] as $q) {
-                $poin = isset($q['poin_per_soal']) ? (int)$q['poin_per_soal'] : (int)$data['point_per_question'];
+                $poin = isset($q['poin_per_soal']) ? (int) $q['poin_per_soal'] : (int) $data['point_per_question'];
 
                 $questionId = DB::table('turnamen_pertanyaan')->insertGetId([
                     'id_turnamen' => $turnamenId,
@@ -117,22 +117,26 @@ class TournamentController extends Controller
                     DB::table('turnamen_pilihan_jawaban')->insert([
                         'id_pertanyaan_turnamen' => $questionId,
                         'teks_jawaban' => $optText,
-                        'adalah_benar' => (isset($q['correctAnswer']) && (int)$q['correctAnswer'] === $optIndex) ? 1 : 0,
+                        'adalah_benar' => (isset($q['correctAnswer']) && (int) $q['correctAnswer'] === $optIndex) ? 1 : 0,
                     ]);
                 }
             }
 
-            // Optionally add creator as participant
+            // Optionally add creator as participant, but only if creator is a siswa (student)
             if ($creatorId) {
-                DB::table('pesertaturnamen')->insert([
-                    'id_turnamen' => $turnamenId,
-                    'id_pengguna' => $creatorId,
-                    'skor_akhir' => 0,
-                    'peringkat' => null,
-                    'joined_at' => $now,
-                    'status' => 'active',
-                    'lives_remaining' => 3,
-                ]);
+                $creatorRole = DB::table('pengguna')->where('id_pengguna', $creatorId)->value('role');
+                // Jika role tidak tersedia atau bukan 'siswa', jangan tambahkan
+                if (strtolower((string) $creatorRole) === 'siswa') {
+                    DB::table('pesertaturnamen')->insert([
+                        'id_turnamen' => $turnamenId,
+                        'id_pengguna' => $creatorId,
+                        'skor_akhir' => 0,
+                        'peringkat' => null,
+                        'joined_at' => $now,
+                        'status' => 'active',
+                        'lives_remaining' => 3,
+                    ]);
+                }
             }
 
             return ['id' => $turnamenId, 'kode' => $kode];
@@ -152,6 +156,9 @@ class TournamentController extends Controller
      */
     public function show($id)
     {
+        // Cek dan update status turnamen jika waktu sudah habis
+        $this->checkAndUpdateStatus($id);
+
         $turnamen = DB::table('turnamen')->where('id_turnamen', $id)->first();
         if (!$turnamen) {
             abort(404);
@@ -198,15 +205,15 @@ class TournamentController extends Controller
                 ->where('id_pertanyaan_turnamen', $q->id)
                 ->orderBy('id_jawaban', 'asc')
                 ->get();
-            
+
             // map choices to A,B,C...
             $opsi = [];
             $letters = range('A', 'Z');
             $correctKey = null;
             foreach ($choicesRaw as $idx => $c) {
-                $key = $letters[$idx] ?? (string)$idx;
+                $key = $letters[$idx] ?? (string) $idx;
                 $opsi[$key] = $c->teks_jawaban;
-                if ((int)$c->adalah_benar === 1) {
+                if ((int) $c->adalah_benar === 1) {
                     $correctKey = $key;
                 }
             }
@@ -227,7 +234,7 @@ class TournamentController extends Controller
             ->select('pesertaturnamen.*', 'pengguna.username as nama')
             ->orderBy('pesertaturnamen.joined_at', 'asc')
             ->get();
-            
+
         $participants = [];
         $participantIds = $participantsRaw->pluck('id_peserta')->filter()->all();
 
@@ -236,7 +243,8 @@ class TournamentController extends Controller
         if (!empty($participantIds)) {
             $answers = DB::table('turnamen_jawaban_peserta')
                 ->whereIn('id_peserta', $participantIds)
-                ->select('id_peserta',
+                ->select(
+                    'id_peserta',
                     DB::raw('COUNT(*) as total_answered'),
                     DB::raw('SUM(is_correct) as correct'),
                     DB::raw('SUM(CASE WHEN is_correct = 0 AND id_jawaban_dipilih IS NOT NULL THEN 1 ELSE 0 END) as wrong'),
@@ -248,9 +256,9 @@ class TournamentController extends Controller
 
             foreach ($answers as $a) {
                 $answersAgg[$a->id_peserta] = [
-                    'total_answered' => (int)$a->total_answered,
-                    'correct' => (int)$a->correct,
-                    'wrong' => (int)$a->wrong,
+                    'total_answered' => (int) $a->total_answered,
+                    'correct' => (int) $a->correct,
+                    'wrong' => (int) $a->wrong,
                     'last_answered' => $a->last_answered,
                 ];
             }
@@ -268,14 +276,14 @@ class TournamentController extends Controller
             $joined = isset($p->joined_at) ? Carbon::parse($p->joined_at) : null;
             $elapsedMin = 0;
             if ($joined) {
-                $elapsedMin = max(0, (int)$joined->diffInMinutes($now));
+                $elapsedMin = max(0, (int) $joined->diffInMinutes($now));
             }
-            $durasi = (int)($turnamen->durasi_pengerjaan ?? 0);
+            $durasi = (int) ($turnamen->durasi_pengerjaan ?? 0);
             $waktuTersisa = max(0, $durasi - $elapsedMin);
 
             $participants[] = [
                 'id' => $p->id_peserta,
-                'nama' => $p->nama ?? ('User '.$p->id_pengguna),
+                'nama' => $p->nama ?? ('User ' . $p->id_pengguna),
                 'kelas' => $p->kelas ?? '-',
                 'status' => ($p->status === 'active') ? 'mengerjakan' : (($p->status === 'finished') ? 'selesai' : 'belum'),
                 'soal_dijawab' => $soalDijawab,
@@ -298,7 +306,7 @@ class TournamentController extends Controller
         foreach ($leaderboardRaw as $r) {
             $leaderboard[] = [
                 'id' => $r->id_peserta,
-                'nama' => $r->nama ?? ('User '.$r->id_pengguna),
+                'nama' => $r->nama ?? ('User ' . $r->id_pengguna),
                 'kelas' => $r->kelas ?? '-',
                 'skor' => $r->skor_akhir ?? 0,
                 'waktu_selesai' => $r->waktu_selesai ?? null,
@@ -324,7 +332,7 @@ class TournamentController extends Controller
             ->leftJoin('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
             ->where('pesertaturnamen.id_turnamen', $id)
             // Pastikan 'username' adalah kolom yang benar di tabel 'pengguna'
-            ->select('pesertaturnamen.id_peserta as id', 'pengguna.username as nama') 
+            ->select('pesertaturnamen.id_peserta as id', 'pengguna.username as nama')
             ->orderBy('pesertaturnamen.joined_at', 'asc')
             ->get();
 
@@ -342,17 +350,72 @@ class TournamentController extends Controller
         if (!$turnamen || $turnamen->status !== 'Menunggu') {
             return response()->json(['message' => 'Turnamen sudah dimulai atau selesai.'], 422);
         }
-        
+
         // --- UBAH STATUS DI DATABASE ---
         DB::table('turnamen')
             ->where('id_turnamen', $id)
             ->update([
                 'status' => 'Berlangsung',
                 // Kita set 'tanggal_pelaksanaan' sebagai waktu "Mulai"
-                'tanggal_pelaksanaan' => Carbon::now() 
+                'tanggal_pelaksanaan' => Carbon::now()
             ]);
         // -------------------------
 
         return response()->json(['message' => 'Turnamen berhasil dimulai!']);
+    }
+
+    /**
+     * [BARU] [AJAX] Mengakhiri turnamen (mengubah status menjadi Selesai)
+     */
+    public function endTournament(Request $request, $id)
+    {
+        $turnamen = DB::table('turnamen')->where('id_turnamen', $id)->first();
+
+        // Validasi: Hanya bisa diakhiri jika status "Berlangsung"
+        if (!$turnamen || $turnamen->status !== 'Berlangsung') {
+            return response()->json(['message' => 'Turnamen tidak sedang berlangsung.'], 422);
+        }
+
+        // --- UBAH STATUS DI DATABASE ---
+        DB::table('turnamen')
+            ->where('id_turnamen', $id)
+            ->update([
+                'status' => 'Selesai',
+                'updated_at' => Carbon::now()
+            ]);
+        // -------------------------
+
+        return response()->json(['message' => 'Turnamen berhasil diakhiri!']);
+    }
+
+    /**
+     * [BARU] Cek dan update status turnamen berdasarkan waktu
+     * Method ini bisa dipanggil secara berkala atau saat halaman di-refresh
+     */
+    public function checkAndUpdateStatus($id)
+    {
+        $turnamen = DB::table('turnamen')->where('id_turnamen', $id)->first();
+
+        if (!$turnamen || $turnamen->status !== 'Berlangsung') {
+            return; // Tidak perlu update jika bukan status Berlangsung
+        }
+
+        // Cek apakah waktu turnamen sudah habis
+        if ($turnamen->tanggal_pelaksanaan) {
+            $startTime = Carbon::parse($turnamen->tanggal_pelaksanaan);
+            $duration = $turnamen->durasi_pengerjaan ?? 45; // dalam menit
+            $endTime = $startTime->copy()->addMinutes($duration);
+            $now = Carbon::now();
+
+            // Jika waktu sudah habis, ubah status menjadi Selesai
+            if ($now->greaterThanOrEqualTo($endTime)) {
+                DB::table('turnamen')
+                    ->where('id_turnamen', $id)
+                    ->update([
+                        'status' => 'Selesai',
+                        'updated_at' => $now
+                    ]);
+            }
+        }
     }
 }
