@@ -18,7 +18,10 @@
             font-family: 'Poppins', sans-serif;
             overflow-x: hidden;
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c
         .content {
             margin-left: 270px;
             padding: 40px;
@@ -202,7 +205,11 @@
 <body x-data="tournamentApp()">
     <div id="tsparticles"></div>
 
+<<<<<<< HEAD
     @include('guru.components.sidebar-guru')
+=======
+     @include('guru.components.sidebar-guru')
+>>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c
 
     <div class="content">
         <div class="flex justify-between items-center mb-6">

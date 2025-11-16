@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Guru</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Black+Ops+One&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.1/tsparticles.bundle.min.js"></script>
 
     <style>
@@ -99,9 +100,14 @@
         }
     </style>
 </head>
+
 <body>
     <div id="tsparticles"></div>
 
+<<<<<<< HEAD
+=======
+    {{-- Sidebar --}}
+>>>>>>> 350fa1ba9819f99c2470623017da41f36448f59c
     @include('guru.components.sidebar-guru')
 
     <div class="content">
@@ -169,17 +175,15 @@
                 </tbody>
             </table>
         </div>
+
     </div>
 
     <script>
         tsParticles.load("tsparticles", {
-            background: { color: { value: "transparent" } },
+            background: { value: "transparent" },
             fpsLimit: 60,
             interactivity: {
-                events: {
-                    onHover: { enable: true, mode: "repulse" },
-                    resize: true
-                },
+                events: { onHover: { enable: true, mode: "repulse" }, resize: true },
                 modes: { repulse: { distance: 100, duration: 0.4 } }
             },
             particles: {
@@ -192,12 +196,10 @@
                     width: 1
                 },
                 move: {
-                    direction: "none",
                     enable: true,
-                    outModes: { default: "bounce" },
-                    random: false,
                     speed: 1,
-                    straight: false
+                    direction: "none",
+                    outModes: { default: "bounce" }
                 },
                 number: { density: { enable: true, area: 800 }, value: 80 },
                 opacity: { value: 0.3 },

@@ -45,7 +45,23 @@
 
     <div id="tsparticles"></div>
 
-    @include('guru.components.sidebar-guru')
+    <div class="sidebar">
+        <div>
+            <h1>Guru Panel</h1>
+            <a href="{{ route('guru.dashboard') }}">🏠 Dashboard</a>
+            <a href="#">📘 Bank Soal</a>
+            <a href="{{ route('guru.tournament.index') }}" class="active">🏆 Turnamen</a>
+            <a href="#">📊 Statistik Siswa</a>
+        </div>
+        <div>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="block w-full text-left px-4 py-2 text-white-400 hover:text-cyan-500 transition">
+                    🚪 Logout
+                </button>
+            </form>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <div class="content">
