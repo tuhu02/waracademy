@@ -175,60 +175,75 @@ class SiswaTournamentController extends Controller
         if (!$turnamen) {
             return response()->json(['status' => 'error', 'message' => 'Not Found'], 404);
         }
-        
-        $status = strtolower(trim($turnamen->status ?? ''));
 
-        if ($status === 'berlangsung') {
-            // Arahkan ke halaman start turnamen (halaman kuis/permainan)
-            $tournamentStartUrl = url('/tournament/start/' . $turnamen->id_turnamen);
+        // Siapkan waktu server (sinkronisasi)
+        $serverTime = Carbon::now()->toDateTimeString();
+
+        // Jika turnamen sudah berlangsung → kembalikan waktu mulai
+        if (strtolower($turnamen->status) === 'berlangsung') {
             return response()->json([
                 'status' => 'Berlangsung',
-                'redirect_url' => $tournamentStartUrl
+                'start_time' => $turnamen->start_time,
+                'end_time' => $turnamen->end_time,
+                'server_time' => $serverTime,
+                'redirect_url' => url('/tournament/start/' . $turnamen->id_turnamen)
             ]);
         }
-        if ($status === 'selesai') {
-            return response()->json([ 'status' => 'Selesai', 'redirect_url' => route('home') ]);
+
+        // Jika sudah selesai
+        if (strtolower($turnamen->status) === 'selesai') {
+            return response()->json([
+                'status' => 'Selesai',
+                'redirect_url' => route('home')
+            ]);
         }
 
-        // --- Logika Data Polling ---
-        $response = ['status' => $turnamen->status]; // misal: 'Menunggu'
-
+        // Mode SOLO
         if ($turnamen->mode === 'solo') {
             $participants = DB::table('pesertaturnamen')
                 ->join('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
                 ->where('pesertaturnamen.id_turnamen', $turnamen->id_turnamen)
                 ->select('pengguna.username', 'pengguna.avatar_url')
                 ->get();
-            $response['participants'] = $participants;
-        
-        } else {
-            // --- Logika BARU untuk TIM (Sama seperti di method lobby()) ---
-            $maxTeamSize = $turnamen->max_team_members ?? 4;
-            $totalTeams = (int) ceil($turnamen->max_peserta / $maxTeamSize);
-            $teams = [];
-            for ($i = 1; $i <= $totalTeams; $i++) {
-                $teams[$i] = ['id' => $i, 'name' => 'Team ' . $i, 'members' => array_fill(0, $maxTeamSize, null)];
-            }
-            $participants = DB::table('pesertaturnamen')
-                ->join('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
-                ->where('pesertaturnamen.id_turnamen', $turnamen->id_turnamen)
-                ->select('pengguna.id_pengguna', 'pengguna.username', 'pengguna.avatar_url', 'pesertaturnamen.team_id', 'pesertaturnamen.slot_index')
-                ->get();
-            foreach ($participants as $p) {
-                if ($p->team_id !== null && $p->slot_index !== null) {
-                    if (isset($teams[$p->team_id]) && isset($teams[$p->team_id]['members'][$p->slot_index])) {
-                        $teams[$p->team_id]['members'][$p->slot_index] = [
-                            'id' => $p->id_pengguna,
-                            'username' => $p->username,
-                            'avatar_url' => $p->avatar_url
-                        ];
-                    }
-                }
-            }
-            $response['teams'] = array_values($teams);
+
+            return response()->json([
+                'status' => $turnamen->status,
+                'server_time' => $serverTime,
+                'start_time' => $turnamen->start_time,
+                'participants' => $participants
+            ]);
         }
-        
-        return response()->json($response);
+
+        // Mode TIM
+        // ... (sama seperti sebelumnya, cukup tambahkan server_time dan start_time)
+        $maxTeamSize = $turnamen->max_team_members ?? 4;
+        $totalTeams = (int) ceil($turnamen->max_peserta / $maxTeamSize);
+        $teams = [];
+        for ($i = 1; $i <= $totalTeams; $i++) {
+            $teams[$i] = ['id' => $i, 'name' => 'Team ' . $i, 'members' => array_fill(0, $maxTeamSize, null)];
+        }
+        $participants = DB::table('pesertaturnamen')
+            ->join('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
+            ->where('pesertaturnamen.id_turnamen', $turnamen->id_turnamen)
+            ->select('pengguna.id_pengguna', 'pengguna.username', 'pengguna.avatar_url', 'pesertaturnamen.team_id', 'pesertaturnamen.slot_index')
+            ->get();
+
+        foreach ($participants as $p) {
+            if ($p->team_id !== null && $p->slot_index !== null) {
+                $teams[$p->team_id]['members'][$p->slot_index] = [
+                    'id' => $p->id_pengguna,
+                    'username' => $p->username,
+                    'avatar_url' => $p->avatar_url
+                ];
+            }
+        }
+
+        return response()->json([
+            'status' => $turnamen->status,
+            'server_time' => $serverTime,
+            'start_time' => $turnamen->start_time,
+            'teams' => array_values($teams)
+        ]);
     }
 
     /**
@@ -301,4 +316,80 @@ class SiswaTournamentController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Berhasil pindah tim.']);
     }
+
+    /**
+     * MENYELESAIKAN TURNAMEN & MENGHITUNG SKOR
+     */
+    public function finishTournament($idPeserta)
+    {
+        $peserta = DB::table('pesertaturnamen')
+            ->where('id_peserta', $idPeserta)
+            ->first();
+
+        if (!$peserta) {
+            return response()->json(['message' => 'Peserta tidak ditemukan'], 404);
+        }
+
+        $turnamen = DB::table('turnamen')
+            ->where('id_turnamen', $peserta->id_turnamen)
+            ->first();
+
+        // Ambil aggregate jawaban
+        $stat = DB::table('turnamen_jawaban_peserta')
+            ->where('id_peserta', $idPeserta)
+            ->selectRaw('COUNT(*) as answered, SUM(is_correct) as correct')
+            ->first();
+
+        $answered = (int) ($stat->answered ?? 0);
+        $correct  = (int) ($stat->correct ?? 0);
+
+        // === BASE SCORE ===
+        $baseScore = $correct * 10;
+
+        // === ACCURACY BONUS ===
+        if ($answered > 0) {
+            $accuracy = $correct / $answered;
+            $accuracyBonus = $accuracy * 20;
+        } else {
+            $accuracy = 0;
+            $accuracyBonus = 0;
+        }
+
+        // === SPEED BONUS ===
+        $totalTime = (int) $turnamen->durasi_pengerjaan * 60; // detik
+
+        $start = Carbon::parse($turnamen->start_time);
+        $finish = Carbon::now();
+        $elapsed = $finish->diffInSeconds($start);
+
+        $remaining = max(0, $totalTime - $elapsed);
+
+        $speedBonus = ($totalTime > 0)
+            ? ($remaining / $totalTime) * 20
+            : 0;
+
+        // === FINAL SCORE ===
+        $totalScore = $baseScore + $accuracyBonus + $speedBonus;
+
+        DB::table('pesertaturnamen')
+            ->where('id_peserta', $idPeserta)
+            ->update([
+                'skor_akhir' => round($totalScore, 2),
+                'waktu_selesai' => Carbon::now(),
+                'status' => 'finished',
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'total_score' => round($totalScore, 2),
+            'detail' => [
+                'correct' => $correct,
+                'answered' => $answered,
+                'base_score' => round($baseScore, 2),
+                'accuracy_bonus' => round($accuracyBonus, 2),
+                'speed_bonus' => round($speedBonus, 2),
+            ]
+        ]);
+    }
+
 }

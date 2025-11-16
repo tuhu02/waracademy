@@ -152,3 +152,10 @@ Route::get('/level/{id}/start', [LevelController::class, 'start'])->name('level.
 
 // submit jawaban → proses hasil
 Route::post('/level/{id}/submit', [LevelController::class, 'submit'])->name('level.submit');
+
+
+
+// finish turnamen
+Route::post('/tournament/finish/{idPeserta}', 
+    [SiswaTournamentController::class, 'finishTournament']
+)->name('tournament.finish');

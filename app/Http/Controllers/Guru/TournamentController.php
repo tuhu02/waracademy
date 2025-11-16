@@ -19,8 +19,8 @@ class TournamentController extends Controller
         // Fetch tournaments with participant count
         $turnamens = DB::table('turnamen')
             ->leftJoin('pesertaturnamen', 'turnamen.id_turnamen', '=', 'pesertaturnamen.id_turnamen')
-            ->select('turnamen.*', DB::raw('COUNT(pesertaturnamen.id_peserta) as peserta_count'))
-            ->groupBy('turnamen.id_turnamen')
+            ->selectRaw('turnamen.id_turnamen, turnamen.nama_turnamen, turnamen.created_at, turnamen.updated_at, COUNT(pesertaturnamen.id_peserta) as peserta_count')
+            ->groupBy('turnamen.id_turnamen', 'turnamen.nama_turnamen', 'turnamen.created_at', 'turnamen.updated_at')
             ->orderBy('turnamen.created_at', 'desc')
             ->get();
 
@@ -338,21 +338,27 @@ class TournamentController extends Controller
     {
         $turnamen = DB::table('turnamen')->where('id_turnamen', $id)->first();
 
-        // Validasi: Hanya bisa dimulai jika status "Menunggu"
         if (!$turnamen || $turnamen->status !== 'Menunggu') {
             return response()->json(['message' => 'Turnamen sudah dimulai atau selesai.'], 422);
         }
         
-        // --- UBAH STATUS DI DATABASE ---
+        $start = Carbon::now();
+        $end   = $start->copy()->addMinutes($turnamen->durasi_pengerjaan);
+
         DB::table('turnamen')
             ->where('id_turnamen', $id)
             ->update([
                 'status' => 'Berlangsung',
-                // Kita set 'tanggal_pelaksanaan' sebagai waktu "Mulai"
-                'tanggal_pelaksanaan' => Carbon::now() 
+                'tanggal_pelaksanaan' => $start,
+                'start_time' => $start,
+                'end_time' => $end,
             ]);
-        // -------------------------
 
-        return response()->json(['message' => 'Turnamen berhasil dimulai!']);
+        return response()->json([
+            'message' => 'Turnamen berhasil dimulai!',
+            'start_time' => $start,
+            'end_time' => $end,
+        ]);
     }
+
 }

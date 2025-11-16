@@ -59,7 +59,8 @@
     <div x-data="{ open: false }" class="absolute right-0 top-0 flex items-center space-x-2">
       <button @click="open = !open" class="flex items-center space-x-2 focus:outline-none">
         <span class="text-white/90 font-medium">{{ session('pengguna_username') ?? 'Nama' }}</span>
-        <img src="{{ asset('avatars/'.$user->avatar_url ?? 'avatars/cat.png') }}" alt="Avatar" class="w-8 h-8 border-2 border-[#6aa8fa] rounded-full bg-white/20 shadow-sm backdrop-blur-sm">
+      <img src="{{ asset('avatars/' . ($user->avatar_url ?? 'cat.png')) }}" 
+          alt="Avatar" class="w-8 h-8 border-2 border-[#6aa8fa] rounded-full bg-white/20 shadow-sm backdrop-blur-sm">
       </button>
 
       <!-- Dropdown -->

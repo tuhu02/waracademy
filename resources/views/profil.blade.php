@@ -69,7 +69,7 @@
       <!-- Panel kiri: profil -->
       <div class="flex flex-col items-center flex-1 text-center">
         <img 
-          src="{{ asset('avatars/'.$user->avatar_url ?? 'avatars/cat.png') }}" 
+          src="{{ asset('avatars/' . ($user->avatar_url ?? 'cat.png')) }}" 
           alt="Avatar" 
           class="w-32 h-32 rounded-full border-4 border-[#6aa8fa]/70 shadow mb-4"
         >

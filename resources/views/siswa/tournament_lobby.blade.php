@@ -244,11 +244,31 @@
                     try {
                         const res = await fetch(this.pollUrl);
                         const data = await res.json();
-                        
-                        if (data.status === 'Berlangsung' || data.status === 'Selesai') {
+
+
+                        if (data.status === 'Berlangsung') {
+                            const server = new Date(data.server_time).getTime();
+                            const start  = new Date(data.start_time).getTime();
+
+                            if (server < start) {
+                                // Belum mulai → lakukan countdown
+                                const diff = Math.floor((start - server) / 1000);
+                                console.log("Countdown:", diff);
+
+                                setTimeout(() => {
+                                    window.location.href = data.redirect_url;
+                                }, diff * 1000);
+
+                                clearInterval(this.pollInterval);
+                                return;
+                            }
+
+                            // Sudah lewat start time → masuk langsung
                             window.location.href = data.redirect_url;
                             return;
                         }
+
+
                         if (data.participants) {
                             this.participants = data.participants;
                         }
@@ -283,11 +303,29 @@
                     try {
                         const res = await fetch(this.statusUrl);
                         const data = await res.json();
-                        
-                        if (data.status === 'Berlangsung' || data.status === 'Selesai') {
+
+                        if (data.status === 'Berlangsung') {
+                            const server = new Date(data.server_time).getTime();
+                            const start  = new Date(data.start_time).getTime();
+
+                            if (server < start) {
+                                // Belum mulai → lakukan countdown
+                                const diff = Math.floor((start - server) / 1000);
+                                console.log("Countdown:", diff);
+
+                                setTimeout(() => {
+                                    window.location.href = data.redirect_url;
+                                }, diff * 1000);
+
+                                clearInterval(this.pollInterval);
+                                return;
+                            }
+
+                            // Sudah lewat start time → masuk langsung
                             window.location.href = data.redirect_url;
                             return;
                         }
+
                         if (data.teams) {
                             this.teams = data.teams;
                         }
