@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Guru\TournamentController;
 use App\Http\Controllers\Guru\GuruController;
 use App\Http\Controllers\SiswaTournamentController;
+use App\Http\Controllers\TopController; 
 use App\Models\Pengguna;
 
 Route::get('/', function () {
@@ -25,6 +26,8 @@ Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('g
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('google.callback');
 
 
+use Illuminate\Support\Facades\DB;
+
 Route::get('/home', function () {
     if (!session()->has('pengguna_id')) {
         return redirect()->route('login');
@@ -32,11 +35,32 @@ Route::get('/home', function () {
 
     $user = Pengguna::find(session('pengguna_id'));
 
+    // === TOP 5 PLAYER ===
+    $topPlayers = DB::table('pengguna')
+        ->leftJoin('progreslevelpengguna', 'pengguna.id_pengguna', '=', 'progreslevelpengguna.id_pengguna')
+        ->leftJoin('riwayatpertandingan', 'pengguna.id_pengguna', '=', 'riwayatpertandingan.id_pengguna')
+        ->select(
+            'pengguna.id_pengguna',
+            'pengguna.username',
+            'pengguna.avatar_url',
+            DB::raw('
+                COALESCE(pengguna.total_exp, 0) +
+                COALESCE(SUM(progreslevelpengguna.exp), 0) +
+                COALESCE(SUM(riwayatpertandingan.exp_didapat), 0)
+            AS total_exp')
+        )
+        ->groupBy('pengguna.id_pengguna', 'pengguna.username', 'pengguna.avatar_url')
+        ->orderByDesc('total_exp')
+        ->limit(5)
+        ->get();
+
     return view('siswa.home', [
         'username' => session('pengguna_username'),
-        'user' => $user
+        'user' => $user,
+        'topPlayers' => $topPlayers  // <-- kirim ke Blade
     ]);
 })->name('home');
+
 
 
 Route::match(['get', 'post'], '/tournament/join', [SiswaTournamentController::class, 'join'])
@@ -164,3 +188,4 @@ Route::get('/level/{id}/start', [LevelController::class, 'start'])->name('level.
 
 // submit jawaban → proses hasil
 Route::post('/level/{id}/submit', [LevelController::class, 'submit'])->name('level.submit');
+
