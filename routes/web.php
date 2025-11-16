@@ -8,6 +8,7 @@ use App\Http\Controllers\Guru\TournamentController;
 use App\Http\Controllers\Guru\GuruController;
 use App\Http\Controllers\SiswaTournamentController;
 use App\Models\Pengguna;
+use App\Http\Controllers\LeaderboardController;
 
 Route::get('/', function () {
     return view('landing'); // pastikan file resources/views/landing.blade.php ada
@@ -47,6 +48,10 @@ Route::get('/tournament/lobby/{kode}/status', [SiswaTournamentController::class,
 // PROFIL
 Route::get('/profil/{id}', [ProfileController::class, 'index'])->name('profil');
 Route::put('/profil/update/{id}', [ProfileController::class, 'update'])->name('profil.update');
+
+// leaderboard
+Route::get('/leaderboard/top100', [LeaderboardController::class, 'top100'])
+    ->name('leaderboard.top100');
 
 
 
