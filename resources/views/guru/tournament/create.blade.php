@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Buat Turnamen - War Academy</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Black+Ops+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Black+Ops+One&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.1/tsparticles.bundle.min.js"></script>
@@ -16,6 +18,7 @@
             font-family: 'Poppins', sans-serif;
             overflow-x: hidden;
         }
+
         .sidebar {
             background: #0b2239;
             width: 250px;
@@ -27,9 +30,10 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            box-shadow: 2px 0 15px rgba(0,0,0,0.4);
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.4);
             z-index: 100;
         }
+
         .sidebar h1 {
             font-family: 'Black Ops One', cursive;
             font-size: 26px;
@@ -37,7 +41,9 @@
             text-align: center;
             margin-bottom: 40px;
         }
-        .sidebar a, .sidebar button {
+
+        .sidebar a,
+        .sidebar button {
             display: block;
             color: #a0aec0;
             padding: 10px 15px;
@@ -52,23 +58,27 @@
             text-align: left;
             cursor: pointer;
         }
+
         .sidebar a:hover,
         .sidebar button:hover,
         .sidebar a.active {
             background: #1e3a8a;
             color: #fff;
         }
+
         .content {
             margin-left: 270px;
             padding: 40px;
         }
+
         .form-section {
             background: #0f172a;
             border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             margin-bottom: 20px;
         }
+
         .form-section h3 {
             font-size: 20px;
             font-weight: 600;
@@ -77,15 +87,18 @@
             border-bottom: 2px solid #1e3a8a;
             padding-bottom: 10px;
         }
+
         .form-group {
             margin-bottom: 20px;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             color: #cbd5e1;
             font-weight: 500;
         }
+
         .form-group input,
         .form-group select,
         .form-group textarea {
@@ -98,9 +111,12 @@
             font-size: 14px;
             transition: all 0.3s;
         }
+
         .form-group input[type="radio"] {
-             width: auto; /* Agar radio button tidak 100% */
+            width: auto;
+            /* Agar radio button tidak 100% */
         }
+
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
@@ -108,6 +124,7 @@
             border-color: #38bdf8;
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
         }
+
         .question-item {
             background: #1e293b;
             padding: 20px;
@@ -115,23 +132,28 @@
             margin-bottom: 15px;
             border: 1px solid #334155;
         }
+
         .question-item h4 {
             color: #38bdf8;
             margin-bottom: 15px;
             font-weight: 600;
         }
+
         .option-group {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 10px;
         }
+
         .option-group input[type="radio"] {
             width: auto;
         }
+
         .option-group input[type="text"] {
             flex: 1;
         }
+
         .btn-primary {
             background: #38bdf8;
             color: #0f172a;
@@ -144,10 +166,12 @@
             cursor: pointer;
             display: inline-block;
         }
+
         .btn-primary:hover {
             background: #0ea5e9;
             transform: translateY(-2px);
         }
+
         .btn-secondary {
             background: #475569;
             color: #fff;
@@ -160,9 +184,11 @@
             cursor: pointer;
             display: inline-block;
         }
+
         .btn-secondary:hover {
             background: #64748b;
         }
+
         .btn-danger {
             background: #ef4444;
             color: #fff;
@@ -173,9 +199,11 @@
             border: none;
             cursor: pointer;
         }
+
         .btn-danger:hover {
             background: #dc2626;
         }
+
         .code-display {
             background: #1e3a8a;
             padding: 20px;
@@ -188,6 +216,7 @@
             font-family: 'Courier New', monospace;
             margin: 20px 0;
         }
+
         #tsparticles {
             position: fixed;
             width: 100%;
@@ -196,16 +225,19 @@
             top: 0;
             left: 0;
         }
+
         .alert {
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 20px;
         }
+
         .alert-success {
             background: rgba(34, 197, 94, 0.2);
             border: 1px solid #22c55e;
             color: #86efac;
         }
+
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -213,9 +245,10 @@
         }
     </style>
 </head>
+
 <body x-data="tournamentApp()">
     <div id="tsparticles"></div>
-    
+
     <div class="sidebar">
         <div>
             <h1>War Academy</h1>
@@ -244,13 +277,14 @@
         </div>
 
         <form @submit.prevent="createTournament">
-                    @csrf
+            @csrf
             <div class="form-section">
                 <h3>📋 Informasi Dasar</h3>
-                
+
                 <div class="form-group">
                     <label for="name">Nama Turnamen *</label>
-                    <input type="text" id="name" x-model="tournament.name" required placeholder="Contoh: Ujian Matematika Semester 1">
+                    <input type="text" id="name" x-model="tournament.name" required
+                        placeholder="Contoh: Ujian Matematika Semester 1">
                 </div>
 
                 <div class="form-group">
@@ -269,24 +303,48 @@
 
                 <div class="form-group" x-show="tournament.mode === 'tim'" x-transition>
                     <label for="maxTeamMembers">Maksimal Anggota per Tim *</label>
-                    <input type="number" id="maxTeamMembers" x-model="tournament.maxTeamMembers" placeholder="Contoh: 3" min="2" class="w-full md:w-1/2">
+                    <input type="number" id="maxTeamMembers" x-model="tournament.maxTeamMembers"
+                        @input="updateMaxTeams()" placeholder="Contoh: 3" min="2" class="w-full md:w-1/2">
                     <p class="text-xs text-gray-400 mt-1">Hanya diisi jika mode tim (minimal 2).</p>
                 </div>
 
                 <div class="grid-2">
                     <div class="form-group">
                         <label for="duration">Durasi Pengerjaan (menit) *</label>
-                        <input type="number" id="duration" x-model="tournament.duration" required placeholder="Contoh: 45" min="1">
+                        <input type="number" id="duration" x-model="tournament.duration" required
+                            placeholder="Contoh: 45" min="1">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" x-show="tournament.mode === 'solo'">
                         <label for="maxParticipants">Batas Maksimal Peserta *</label>
-                        <input type="number" id="maxParticipants" x-model="tournament.maxParticipants" required placeholder="Contoh: 30" min="1">
+                        <input type="number" id="maxParticipants" x-model="tournament.maxParticipants"
+                            :required="tournament.mode === 'solo'" placeholder="Contoh: 30" min="1">
+                    </div>
+                    <div class="form-group" x-show="tournament.mode === 'tim'" x-transition>
+                        <label for="maxTeams">Batas Maksimal Tim *</label>
+                        <input type="number" id="maxTeams" x-model="tournament.maxTeams" @input="validateMaxTeams()"
+                            :required="tournament.mode === 'tim'" :step="tournament.maxTeamMembers || 1"
+                            :min="tournament.maxTeamMembers || 1" placeholder="Contoh: 10">
+                        <p class="text-xs text-gray-400 mt-1" x-show="tournament.maxTeamMembers">
+                            Total maksimal peserta = <span class="text-cyan-400 font-bold"
+                                x-text="(tournament.maxTeams || 0) * (tournament.maxTeamMembers || 1)"></span>
+                            (<span x-text="tournament.maxTeams || 0"></span> tim × <span
+                                x-text="tournament.maxTeamMembers || 0"></span> anggota)
+                        </p>
+                        <p class="text-xs text-yellow-400 mt-1"
+                            x-show="tournament.mode === 'tim' && tournament.maxTeamMembers && tournament.maxTeams && (tournament.maxTeams % tournament.maxTeamMembers !== 0)">
+                            ⚠️ Jumlah tim harus kelipatan dari maksimal anggota per tim (<span
+                                x-text="tournament.maxTeamMembers"></span>)
+                        </p>
+                        <p class="text-xs text-gray-400 mt-1" x-show="tournament.maxTeamMembers">
+                            Contoh kelipatan: <span class="text-cyan-400" x-text="getMultiplesExample()"></span>
+                        </p>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="description">Deskripsi</label>
-                    <textarea id="description" x-model="tournament.description" rows="3" placeholder="Jelaskan tujuan dan aturan turnamen..."></textarea>
+                    <textarea id="description" x-model="tournament.description" rows="3"
+                        placeholder="Jelaskan tujuan dan aturan turnamen..."></textarea>
                 </div>
             </div>
 
@@ -295,11 +353,13 @@
                 <div class="grid-2">
                     <div class="form-group">
                         <label for="pointPerQuestion">Poin per Soal Benar *</label>
-                        <input type="number" id="pointPerQuestion" x-model="tournament.pointPerQuestion" required placeholder="Contoh: 10" min="1">
+                        <input type="number" id="pointPerQuestion" x-model="tournament.pointPerQuestion" required
+                            placeholder="Contoh: 10" min="1">
                     </div>
                     <div class="form-group">
                         <label for="bonusExp">Bonus EXP untuk Pemenang *</label>
-                        <input type="number" id="bonusExp" x-model="tournament.bonusExp" required placeholder="Contoh: 500" min="0">
+                        <input type="number" id="bonusExp" x-model="tournament.bonusExp" required
+                            placeholder="Contoh: 500" min="0">
                     </div>
                 </div>
             </div>
@@ -307,36 +367,36 @@
             <div class="form-section">
                 <h3>❓ Bank Soal Turnamen</h3>
                 <p class="text-gray-400 mb-4">Masukkan soal-soal yang akan digunakan dalam turnamen ini</p>
-                
+
                 <template x-for="(question, index) in tournament.questions" :key="index">
                     <div class="question-item">
                         <div class="flex justify-between items-center mb-3">
                             <h4>Soal <span x-text="index + 1"></span></h4>
-                            <button type="button" @click="removeQuestion(index)" class="btn-danger" x-show="tournament.questions.length > 1">
+                            <button type="button" @click="removeQuestion(index)" class="btn-danger"
+                                x-show="tournament.questions.length > 1">
                                 🗑️ Hapus
                             </button>
                         </div>
-                        
+
                         <div class="form-group">
                             <label>Pertanyaan *</label>
-                            <textarea x-model="question.text" rows="3" required placeholder="Tulis pertanyaan di sini..."></textarea>
+                            <textarea x-model="question.text" rows="3" required
+                                placeholder="Tulis pertanyaan di sini..."></textarea>
                         </div>
 
                         <div class="form-group">
                             <label>Pilihan Jawaban *</label>
                             <template x-for="(option, optIndex) in question.options" :key="optIndex">
                                 <div class="option-group">
-                                    <input type="radio" 
-                                           :name="'correct_' + index" 
-                                           :checked="question.correctAnswer === optIndex"
-                                           @change="question.correctAnswer = optIndex">
-                                    <input type="text" 
-                                           x-model="question.options[optIndex]" 
-                                           required 
-                                           :placeholder="'Pilihan ' + (optIndex + 1)">
+                                    <input type="radio" :name="'correct_' + index"
+                                        :checked="question.correctAnswer === optIndex"
+                                        @change="question.correctAnswer = optIndex">
+                                    <input type="text" x-model="question.options[optIndex]" required
+                                        :placeholder="'Pilihan ' + (optIndex + 1)">
                                 </div>
                             </template>
-                            <p class="text-xs text-gray-400 mt-2">* Pilih radio button untuk menandai jawaban yang benar</p>
+                            <p class="text-xs text-gray-400 mt-2">* Pilih radio button untuk menandai jawaban yang benar
+                            </p>
                         </div>
 
                         <div class="grid-2">
@@ -370,8 +430,10 @@
             <div class="form-section">
                 <div class="flex justify-between items-center">
                     <div>
-                        <p class="text-gray-400">Total Soal: <span class="text-cyan-400 font-bold" x-text="tournament.questions.length"></span></p>
-                        <p class="text-gray-400">Estimasi Durasi: <span class="text-cyan-400 font-bold" x-text="tournament.duration"></span> menit</p>
+                        <p class="text-gray-400">Total Soal: <span class="text-cyan-400 font-bold"
+                                x-text="tournament.questions.length"></span></p>
+                        <p class="text-gray-400">Estimasi Durasi: <span class="text-cyan-400 font-bold"
+                                x-text="tournament.duration"></span> menit</p>
                     </div>
                     <button type="submit" class="btn-primary">
                         🚀 Buat Turnamen & Generate Kode Room
@@ -404,10 +466,12 @@
                     mode: 'solo', // <-- BARU: 'solo' atau 'tim'
                     maxTeamMembers: null, // <-- BARU: untuk menyimpan maks anggota tim
                     duration: 45,
-                    maxParticipants: 30,
+                    maxParticipants: 30, // Untuk mode solo
+                    maxTeams: 10, // Untuk mode tim
                     description: '',
                     pointPerQuestion: 10,
                     bonusExp: 500,
+                    minLevel: 1, // Level minimal yang diperlukan
                     questions: [
                         {
                             text: '',
@@ -437,6 +501,42 @@
                     }
                 },
 
+                updateMaxTeams() {
+                    // Saat maxTeamMembers berubah, sesuaikan maxTeams agar tetap kelipatan
+                    if (this.tournament.mode === 'tim' && this.tournament.maxTeamMembers && this.tournament.maxTeams) {
+                        // Bulatkan ke kelipatan terdekat
+                        const currentMaxTeams = this.tournament.maxTeams;
+                        const rounded = Math.round(currentMaxTeams / this.tournament.maxTeamMembers) * this.tournament.maxTeamMembers;
+                        if (rounded > 0 && rounded !== currentMaxTeams) {
+                            this.tournament.maxTeams = rounded;
+                        }
+                    }
+                },
+
+                validateMaxTeams() {
+                    // Validasi bahwa maxTeams adalah kelipatan dari maxTeamMembers
+                    if (this.tournament.mode === 'tim' && this.tournament.maxTeamMembers && this.tournament.maxTeams) {
+                        if (this.tournament.maxTeams % this.tournament.maxTeamMembers !== 0) {
+                            // Bulatkan ke kelipatan terdekat
+                            const rounded = Math.round(this.tournament.maxTeams / this.tournament.maxTeamMembers) * this.tournament.maxTeamMembers;
+                            if (rounded > 0) {
+                                this.tournament.maxTeams = rounded;
+                            }
+                        }
+                    }
+                },
+
+                getMultiplesExample() {
+                    if (!this.tournament.maxTeamMembers || this.tournament.maxTeamMembers < 2) {
+                        return '';
+                    }
+                    const multiples = [];
+                    for (let i = 1; i <= 5; i++) {
+                        multiples.push(this.tournament.maxTeamMembers * i);
+                    }
+                    return multiples.join(', ') + ', ...';
+                },
+
                 generateRoomCode() {
                     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
                     let code = '';
@@ -448,7 +548,7 @@
 
                 createTournament() {
                     // Validasi client-side
-                    const invalidQuestions = this.tournament.questions.filter(q => 
+                    const invalidQuestions = this.tournament.questions.filter(q =>
                         !q.text || q.options.some(opt => !opt)
                     );
 
@@ -458,9 +558,30 @@
                     }
 
                     // [BARU] Validasi untuk mode tim
-                    if (this.tournament.mode === 'tim' && (!this.tournament.maxTeamMembers || this.tournament.maxTeamMembers < 2)) {
-                        alert('Untuk mode tim, mohon isi maksimal anggota tim (minimal 2).');
-                        return;
+                    if (this.tournament.mode === 'tim') {
+                        if (!this.tournament.maxTeamMembers || this.tournament.maxTeamMembers < 2) {
+                            alert('Untuk mode tim, mohon isi maksimal anggota tim (minimal 2).');
+                            return;
+                        }
+                        if (!this.tournament.maxTeams || this.tournament.maxTeams < 1) {
+                            alert('Untuk mode tim, mohon isi maksimal tim (minimal 1).');
+                            return;
+                        }
+                        // Validasi bahwa maxTeams adalah kelipatan dari maxTeamMembers
+                        if (this.tournament.maxTeams % this.tournament.maxTeamMembers !== 0) {
+                            alert(`Jumlah tim harus kelipatan dari maksimal anggota per tim (${this.tournament.maxTeamMembers}).\nContoh: ${this.tournament.maxTeamMembers}, ${this.tournament.maxTeamMembers * 2}, ${this.tournament.maxTeamMembers * 3}, dst.`);
+                            return;
+                        }
+                    }
+
+                    // Hitung max_participants berdasarkan mode
+                    let maxParticipants;
+                    if (this.tournament.mode === 'tim') {
+                        // Untuk mode tim: max_participants = maxTeams × maxTeamMembers
+                        maxParticipants = this.tournament.maxTeams * this.tournament.maxTeamMembers;
+                    } else {
+                        // Untuk mode solo: gunakan maxParticipants langsung
+                        maxParticipants = this.tournament.maxParticipants;
                     }
 
                     // Siapkan payload
@@ -468,9 +589,9 @@
                         name: this.tournament.name,
                         // date: this.tournament.date, // <-- DIHAPUS
                         mode: this.tournament.mode, // <-- BARU
-                        max_team_members: this.tournament.mode === 'tim' ? this.tournament.maxTeamMembers : null, // <-- BARU
+                        maxTeamMembers: this.tournament.mode === 'tim' ? this.tournament.maxTeamMembers : null, // <-- BARU
                         duration: this.tournament.duration,
-                        max_participants: this.tournament.maxParticipants,
+                        max_participants: maxParticipants, // Dihitung otomatis untuk mode tim
                         description: this.tournament.description,
                         point_per_question: this.tournament.pointPerQuestion,
                         bonus_exp: this.tournament.bonusExp,
@@ -489,24 +610,24 @@
                         },
                         body: JSON.stringify(payload)
                     })
-                    .then(async res => {
-                        if (!res.ok) {
-                            const json = await res.json().catch(() => ({}));
-                            const msg = json.message || 'Gagal membuat turnamen. Periksa input dan coba lagi.';
-                            alert(msg);
-                            throw new Error(msg);
-                        }
-                        return res.json();
-                    })
-                    .then(json => {
-                        // Backend menyediakan room_code
-                        this.roomCode = json.room_code || this.generateRoomCode();
-                        this.showSuccess = true;
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    })
-                    .catch(err => {
-                        console.error('Error creating tournament:', err);
-                    });
+                        .then(async res => {
+                            if (!res.ok) {
+                                const json = await res.json().catch(() => ({}));
+                                const msg = json.message || 'Gagal membuat turnamen. Periksa input dan coba lagi.';
+                                alert(msg);
+                                throw new Error(msg);
+                            }
+                            return res.json();
+                        })
+                        .then(json => {
+                            // Backend menyediakan room_code
+                            this.roomCode = json.room_code || this.generateRoomCode();
+                            this.showSuccess = true;
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        })
+                        .catch(err => {
+                            console.error('Error creating tournament:', err);
+                        });
                 },
 
                 copyRoomCode() {
@@ -521,12 +642,12 @@
             background: { color: { value: "transparent" } },
             fpsLimit: 60,
             interactivity: {
-                events: { 
-                    onHover: { enable: true, mode: "repulse" }, 
-                    resize: true 
+                events: {
+                    onHover: { enable: true, mode: "repulse" },
+                    resize: true
                 },
-                modes: { 
-                    repulse: { distance: 100, duration: 0.4 } 
+                modes: {
+                    repulse: { distance: 100, duration: 0.4 }
                 }
             },
             particles: {
@@ -546,9 +667,9 @@
                     speed: 1,
                     straight: false
                 },
-                number: { 
-                    density: { enable: true, area: 800 }, 
-                    value: 80 
+                number: {
+                    density: { enable: true, area: 800 },
+                    value: 80
                 },
                 opacity: { value: 0.3 },
                 shape: { type: "circle" },
@@ -558,4 +679,5 @@
         });
     </script>
 </body>
+
 </html>

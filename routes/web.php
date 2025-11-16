@@ -39,7 +39,7 @@ Route::get('/home', function () {
 })->name('home');
 
 
-Route::match(['get','post'], '/tournament/join', [SiswaTournamentController::class, 'join'])
+Route::match(['get', 'post'], '/tournament/join', [SiswaTournamentController::class, 'join'])
     ->name('tournament.join');
 Route::get('/tournament/lobby/{code}', [SiswaTournamentController::class, 'lobby'])->name('tournament.lobby');
 Route::get('/tournament/lobby/{kode}/status', [SiswaTournamentController::class, 'lobbyStatus'])->name('tournament.lobby.status');
@@ -80,6 +80,12 @@ Route::post('/tournament/lobby/{kode}/move', [SiswaTournamentController::class, 
 // [RUTE BARU]
 // Rute ini akan menampilkan halaman kuis/permainan untuk turnamen
 Route::get('/tournament/start/{id}', [SiswaTournamentController::class, 'startTournamentGame'])->name('tournament.start');
+// Endpoint untuk menerima submit jawaban turnamen dari siswa
+Route::post('/tournament/submit/{id}', [SiswaTournamentController::class, 'submitAnswers'])->name('tournament.submit');
+// Halaman leaderboard turnamen untuk siswa
+Route::get('/tournament/leaderboard/{id}', [SiswaTournamentController::class, 'leaderboard'])->name('tournament.leaderboard');
+// API endpoint untuk polling leaderboard (real-time update)
+Route::get('/tournament/leaderboard/{id}/status', [SiswaTournamentController::class, 'leaderboardStatus'])->name('tournament.leaderboard.status');
 
 
 // Route Guru
@@ -111,6 +117,12 @@ Route::post('/guru/tournament', [TournamentController::class, 'store'])->name('g
 
 // Show tournament detail (dynamic)
 Route::get('/guru/tournament/{id}', [TournamentController::class, 'show'])->name('guru.tournament.show');
+
+// Start tournament (POST)
+Route::post('/guru/tournament/{id}/start', [TournamentController::class, 'startTournament'])->name('guru.tournament.start');
+
+// End tournament (POST)
+Route::post('/guru/tournament/{id}/end', [TournamentController::class, 'endTournament'])->name('guru.tournament.end');
 
 // Halaman kisi-kisi (preview)
 Route::get('/level/{id}', function ($id) {

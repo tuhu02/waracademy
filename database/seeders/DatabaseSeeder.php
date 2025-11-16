@@ -19,5 +19,8 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // Uncomment baris di bawah untuk menjalankan seeder turnamen individu
+        // $this->call(TournamentIndividuSeeder::class);
     }
 }
