@@ -79,36 +79,78 @@ class SiswaTournamentController extends Controller
 
         // Kembalikan URL yang valid — gunakan nama route yang ada di routes/web.php: 'tournament.lobby'
         // Gunakan URL langsung supaya tidak bergantung pada nama parameter rute ({code} vs {kode})
-        $lobbyUrl = url('/tournament/lobby/' . urlencode($kode));
+        $lobbyUrl = route('tournament.lobby', ['kode' => $kode]);
         return response()->json([
             'redirect_url' => $lobbyUrl
         ], 200);
     }
 
+    private function checkTournamentStatus($id)
+    {
+        $turnamen = DB::table('turnamen')->where('id_turnamen', $id)->first();
+
+        if (!$turnamen) {
+            return;
+        }
+
+        $now = now();
+
+        // Jika turnamen berstatus "Berlangsung" dan waktu sudah habis
+        if ($turnamen->status === 'Berlangsung' && $turnamen->end_time && $now->gt($turnamen->end_time)) {
+            // Update status ke "Selesai"
+            DB::table('turnamen')->where('id_turnamen', $id)
+                ->update(['status' => 'Selesai']);
+        }
+        
+        // Jika turnamen berstatus "Menunggu" dan sudah waktunya mulai
+        if ($turnamen->status === 'Menunggu' && $turnamen->start_time && $now->gte($turnamen->start_time)) {
+            // Update status ke "Berlangsung"
+            DB::table('turnamen')->where('id_turnamen', $id)
+                ->update(['status' => 'Berlangsung']);
+        }
+    }
+
+
+
+
+
+
     /**
      * Tampilkan halaman permainan untuk siswa ketika turnamen dimulai.
      */
-    public function startTournamentGame($id)
-    {
-        // Cek dan update status turnamen jika waktu sudah habis
-        $this->checkTournamentStatus($id);
+    /**
+     * [BARU] [AJAX] Memulai turnamen - VERSI DIPERBAIKI
+     */
 
+    public function startTournament($id)
+    {
         $turnamen = DB::table('turnamen')->where('id_turnamen', $id)->first();
+        
         if (!$turnamen) {
             abort(404, 'Turnamen tidak ditemukan.');
         }
 
-        // Pastikan turnamen sudah Berlangsung
-        if (strtolower(trim($turnamen->status ?? '')) !== 'berlangsung') {
-            // Jika sudah selesai, arahkan ke home
-            if (strtolower(trim($turnamen->status ?? '')) === 'selesai') {
-                return redirect()->route('home')->with('message', 'Turnamen sudah selesai.');
-            }
-            // Jika belum, arahkan kembali ke lobi
-            return redirect()->route('tournament.lobby', ['kode' => $turnamen->kode_room]);
+
+        if ($turnamen->end_time && now()->gt($turnamen->end_time)) {
+            return redirect()->route('tournament.leaderboard', $id)
+                ->with('error', 'Waktu turnamen telah habis.');
         }
 
-        // Ambil soal untuk turnamen (minimal)
+
+        // Debug: Lihat status sebenarnya
+        // dd($turnamen->status, $turnamen->id_turnamen, $turnamen->mode); // Uncomment untuk debugging
+
+        // Izinkan akses jika status "Berlangsung" ATAU "Menunggu" (untuk testing)
+        if (strtolower(trim($turnamen->status ?? '')) !== 'berlangsung') {
+            // Untuk sementara, izinkan akses meskipun status bukan "Berlangsung"
+            // return redirect()->route('tournament.lobby', ['kode' => $turnamen->kode_room])
+            //     ->with('error', 'Turnamen belum dimulai atau sudah selesai.');
+            
+            // Atau tampilkan error JSON (sesuai pesan yang Anda lihat)
+            return response()->json(['message' => 'Turnamen sudah dimulai atau selesai.'], 403);
+        }
+
+        // Ambil soal untuk turnamen
         $questionsRaw = DB::table('turnamen_pertanyaan')
             ->where('id_turnamen', $id)
             ->orderBy('id', 'asc')
@@ -129,7 +171,6 @@ class SiswaTournamentController extends Controller
                 ];
             }
 
-            // Hanya tambahkan soal jika ada pilihan jawaban
             if (count($choices) > 0) {
                 $questions[] = [
                     'id' => $q->id,
@@ -139,12 +180,15 @@ class SiswaTournamentController extends Controller
             }
         }
 
-        // Render full gameplay blade (the user-facing quiz UI)
+        // dd($questionsf);
+
+        // Render gameplay blade
         return view('siswa.tournament_game', [
             'turnamen' => $turnamen,
             'questions' => $questions
         ]);
     }
+
 
     /**
      * Menangani submit jawaban turnamen dari siswa.
@@ -167,11 +211,18 @@ class SiswaTournamentController extends Controller
         }
 
         $answersJson = $req->input('answers');
-        $timeTaken = $req->input('time_taken');
+        if (is_string($answersJson)) {
+            $answers = json_decode($answersJson, true);
+        }
+
+        $turnamen = DB::table('turnamen')->where('id_turnamen', $id)->first();
+        $timeTaken = Carbon::now()->diffInSeconds($turnamen->start_time);
+
+
 
         $answers = [];
         if (!empty($answersJson)) {
-            $answers = json_decode($answersJson, true);
+            $answers = $answersJson;
             if (!is_array($answers)) {
                 $answers = [];
             }
@@ -492,12 +543,25 @@ class SiswaTournamentController extends Controller
      */
     public function lobby($kode)
     {
+        
+        
         $user = Pengguna::find(session('pengguna_id'));
         $turnamen = DB::table('turnamen')->where('kode_room', $kode)->first();
-
+        
         if (!$turnamen) {
             abort(404, 'Turnamen tidak ditemukan.');
         }
+
+        $peserta = DB::table('pesertaturnamen')
+            ->where('id_turnamen', $turnamen->id_turnamen)
+            ->where('id_pengguna', session('pengguna_id'))
+            ->first();
+
+        if (!$peserta) {
+            return redirect()->route('home')->with('error', 'Anda belum bergabung pada turnamen ini.');
+        }
+
+
 
         // --- Logika untuk SOLO ---
         if ($turnamen->mode === 'solo') {
@@ -530,21 +594,20 @@ class SiswaTournamentController extends Controller
                 'members' => array_fill(0, $maxTeamSize, null) // Buat slot kosong [null, null, null, null]
             ];
         }
-
         // 2. Ambil semua peserta yang sudah ada di lobi ini
         $participants = DB::table('pesertaturnamen')
-            ->join('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
-            ->where('pesertaturnamen.id_turnamen', $turnamen->id_turnamen)
-            ->select('pengguna.id_pengguna', 'pengguna.username', 'pengguna.avatar_url', 'pesertaturnamen.team_id', 'pesertaturnamen.slot_index')
-            ->get();
-
+        ->join('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
+        ->where('pesertaturnamen.id_turnamen', $turnamen->id_turnamen)
+        ->select('pengguna.id_pengguna', 'pengguna.username', 'pengguna.avatar_url', 'pesertaturnamen.id_tim', 'pesertaturnamen.slot_index')
+        ->get();
+        
         // 3. Masukkan peserta ke slot tim mereka
         foreach ($participants as $p) {
-            if ($p->team_id !== null && $p->slot_index !== null) {
-                // Pastikan team_id dan slot_index valid
-                if (isset($teams[$p->team_id]) && isset($teams[$p->team_id]['members'][$p->slot_index])) {
+            if ($p->id_tim !== null && $p->slot_index !== null) {
+                // Pastikan id_tim dan slot_index valid
+                if (isset($teams[$p->id_tim])) {
                     // Update slot dengan data peserta (overwrite untuk sinkronisasi)
-                    $teams[$p->team_id]['members'][$p->slot_index] = [
+                    $teams[$p->id_tim]['members'][$p->slot_index] = [
                         'id' => $p->id_pengguna,
                         'username' => $p->username,
                         'avatar_url' => $p->avatar_url ?? null
@@ -553,6 +616,7 @@ class SiswaTournamentController extends Controller
             }
         }
 
+        // dd($teams);
         return view('siswa.tournament_lobby', [
             'turnamen' => $turnamen,
             'initialParticipants' => [], // Kosongkan, kita pakai $teams
@@ -564,82 +628,157 @@ class SiswaTournamentController extends Controller
     /**
      * Endpoint JSON untuk polling status lobi oleh siswa.
      */
+        /**
+     * Endpoint JSON untuk polling status lobi oleh siswa.
+     */
     public function lobbyStatus($kode)
     {
+        
         $turnamen = DB::table('turnamen')->where('kode_room', $kode)->first();
         if (!$turnamen) {
             return response()->json(['status' => 'error', 'message' => 'Not Found'], 404);
         }
 
-        // Siapkan waktu server (sinkronisasi)
-        $serverTime = Carbon::now()->toDateTimeString();
+        $status = $turnamen->status ?? 'Menunggu';
 
-        // Jika turnamen sudah berlangsung → kembalikan waktu mulai
-        if (strtolower($turnamen->status) === 'berlangsung') {
-            return response()->json([
-                'status' => 'Berlangsung',
-                'start_time' => $turnamen->start_time,
-                'end_time' => $turnamen->end_time,
-                'server_time' => $serverTime,
-                'redirect_url' => url('/tournament/start/' . $turnamen->id_turnamen)
-            ]);
-        }
+        // server time (untuk countdown)
+        $server_time = now()->toDateTimeString();
+        $start_time = $turnamen->start_time ?? $turnamen->tanggal_pelaksanaan ?? null;
+        $redirect_url = url('/tournament/start/' . $turnamen->id_turnamen);
 
-        // Jika sudah selesai
-        if (strtolower($turnamen->status) === 'selesai') {
-            return response()->json([
-                'status' => 'Selesai',
-                'redirect_url' => route('home')
-            ]);
-        }
+        $response = [
+            'status' => $status,
+            'server_time' => $server_time,
+            'start_time' => $start_time ? (string)$start_time : null,
+            'redirect_url' => $redirect_url,
+        ];
 
-        // Mode SOLO
+        // Logika untuk mode solo
         if ($turnamen->mode === 'solo') {
             $participants = DB::table('pesertaturnamen')
                 ->join('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
                 ->where('pesertaturnamen.id_turnamen', $turnamen->id_turnamen)
                 ->select('pengguna.username', 'pengguna.avatar_url')
                 ->get();
+            $response['participants'] = $participants;
+        } 
+        // Logika untuk mode tim
+        else {
+            $maxTeamSize = $turnamen->max_team_members ?? 4;
+            $totalTeams = (int) ($turnamen->max_peserta / $maxTeamSize);
+            
+            $teams = [];
+            for ($i = 1; $i <= $totalTeams; $i++) {
+                $teams[$i] = [
+                    'id' => $i,
+                    'name' => 'Team ' . $i,
+                    'members' => array_fill(0, $maxTeamSize, null)
+                ];
+            }
 
-            return response()->json([
-                'status' => $turnamen->status,
-                'server_time' => $serverTime,
-                'start_time' => $turnamen->start_time,
-                'participants' => $participants
+            // Ambil peserta dan masukkan ke slot
+            $participants = DB::table('pesertaturnamen')
+                ->join('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
+                ->where('pesertaturnamen.id_turnamen', $turnamen->id_turnamen)
+                ->select('pengguna.id_pengguna', 'pengguna.username', 'pengguna.avatar_url', 'pesertaturnamen.id_tim', 'pesertaturnamen.slot_index')
+                ->get();
+
+            foreach ($participants as $p) {
+                if ($p->id_tim !== null && $p->slot_index !== null && isset($teams[$p->id_tim])) {
+                    $teams[$p->id_tim]['members'][$p->slot_index] = [
+                        'id' => $p->id_pengguna,
+                        'username' => $p->username,
+                        'avatar_url' => $p->avatar_url ?? null
+                    ];
+                }
+            }
+
+            $response['teams'] = array_values($teams);
+        }
+
+        return response()->json($response);
+    }   
+
+
+
+    public function submitQuestion(Request $request, $id)
+    {
+        // $id = id_turnamen
+        $userId = session('pengguna_id');
+        if (!$userId) {
+            return response()->json(['message' => 'Sesi tidak valid.'], 401);
+        }
+
+        $questionId = $request->input('question_id');
+        $chosen = $request->input('chosen_option'); // bisa index atau id_jawaban
+        if (!$questionId) {
+            return response()->json(['message' => 'question_id required'], 422);
+        }
+
+        // cari tim yang user tergabung
+        $anggota = DB::table('tim_anggota')->where('id_pengguna', $userId)->first();
+        if (!$anggota) {
+            return response()->json(['message' => 'Anda belum berada di tim.'], 403);
+        }
+
+        // cari peserta (tim) pada turnamen
+        $peserta = DB::table('pesertaturnamen')
+            ->where('id_turnamen', $id)
+            ->where('id_tim', $anggota->id_tim)
+            ->first();
+
+        if (!$peserta) {
+            return response()->json(['message' => 'Peserta tim tidak ditemukan.'], 404);
+        }
+
+        // cek apakah sudah ada jawaban untuk pertanyaan ini oleh peserta (hindari duplikat)
+        $exists = DB::table('turnamen_jawaban_peserta')
+            ->where('id_peserta', $peserta->id_peserta)
+            ->where('id_pertanyaan_turnamen', $questionId)
+            ->first();
+
+        // tentukan apakah benar (cek pilihan jawaban)
+        $isCorrect = 0;
+        // asumsi: turnamen_pilihan_jawaban ada kolom id_jawaban atau id
+        if (!is_null($chosen)) {
+            // tampilkan logika pengecekan sederhana — sesuaikan dengan struktur Anda
+            $jaw = DB::table('turnamen_pilihan_jawaban')
+                ->where('id_pertanyaan_turnamen', $questionId)
+                ->where(function($q) use ($chosen) {
+                    // jika frontend mengirim index (A/B/0) atau id jawaban
+                    $q->where('id_jawaban', $chosen)->orWhere('teks_jawaban', $chosen);
+                })
+                ->first();
+            if ($jaw && (int)$jaw->adalah_benar === 1) $isCorrect = 1;
+        }
+
+        $now = Carbon::now();
+
+        if ($exists) {
+            // update jawaban (overwrite)
+            DB::table('turnamen_jawaban_peserta')->where('id', $exists->id)
+                ->update([
+                    'id_jawaban_dipilih' => $chosen,
+                    'is_correct' => $isCorrect,
+                    'answered_at' => $now
+                ]);
+        } else {
+            // insert jawaban baru
+            DB::table('turnamen_jawaban_peserta')->insert([
+                'id_peserta' => $peserta->id_peserta,
+                'id_pertanyaan_turnamen' => $questionId,
+                'id_jawaban_dipilih' => $chosen,
+                'is_correct' => $isCorrect,
+                'answered_at' => $now
             ]);
         }
 
-        // Mode TIM
-        // ... (sama seperti sebelumnya, cukup tambahkan server_time dan start_time)
-        $maxTeamSize = $turnamen->max_team_members ?? 4;
-        $totalTeams = (int) ceil($turnamen->max_peserta / $maxTeamSize);
-        $teams = [];
-        for ($i = 1; $i <= $totalTeams; $i++) {
-            $teams[$i] = ['id' => $i, 'name' => 'Team ' . $i, 'members' => array_fill(0, $maxTeamSize, null)];
-        }
-        $participants = DB::table('pesertaturnamen')
-            ->join('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
-            ->where('pesertaturnamen.id_turnamen', $turnamen->id_turnamen)
-            ->select('pengguna.id_pengguna', 'pengguna.username', 'pengguna.avatar_url', 'pesertaturnamen.team_id', 'pesertaturnamen.slot_index')
-            ->get();
-
-        foreach ($participants as $p) {
-            if ($p->team_id !== null && $p->slot_index !== null) {
-                $teams[$p->team_id]['members'][$p->slot_index] = [
-                    'id' => $p->id_pengguna,
-                    'username' => $p->username,
-                    'avatar_url' => $p->avatar_url
-                ];
-            }
-        }
-
-        return response()->json([
-            'status' => $turnamen->status,
-            'server_time' => $serverTime,
-            'start_time' => $turnamen->start_time,
-            'teams' => array_values($teams)
-        ]);
+        return response()->json(['success' => true, 'is_correct' => $isCorrect]);
     }
+
+
+
+
 
     /**
      * [METHOD BARU] Menangani perpindahan tim/slot oleh siswa.
@@ -666,14 +805,14 @@ class SiswaTournamentController extends Controller
             return response()->json(['message' => 'Anda belum bergabung dengan turnamen ini.'], 403);
         }
 
-        $newTeamId = $request->input('team_id');
+        $newTeamId = $request->input('id_tim');
         $newSlotIndex = $request->input('slot_index');
 
         // Jika newTeamId atau newSlotIndex adalah null, berarti siswa 'Keluar dari Tim'
         if ($newTeamId === null || $newSlotIndex === null) {
             DB::table('pesertaturnamen')
                 ->where('id_peserta', $peserta->id_peserta)
-                ->update(['team_id' => null, 'slot_index' => null]);
+                ->update(['id_tim' => null, 'slot_index' => null]);
             return response()->json(['success' => true, 'message' => 'Keluar dari tim.']);
         }
 
@@ -689,7 +828,7 @@ class SiswaTournamentController extends Controller
                 // 2. Cek apakah slot baru sudah terisi (kecuali jika itu slot yang sama dengan user ini)
                 $existingSlot = DB::table('pesertaturnamen')
                     ->where('id_turnamen', $turnamen->id_turnamen)
-                    ->where('team_id', $newTeamId)
+                    ->where('id_tim', $newTeamId)
                     ->where('slot_index', $newSlotIndex)
                     ->where('id_peserta', '!=', $peserta->id_peserta) // Kecuali jika itu slot user sendiri
                     ->lockForUpdate() // Kunci baris agar tidak ada 'race condition'
@@ -702,13 +841,13 @@ class SiswaTournamentController extends Controller
                 // 3. Kosongkan slot lama (jika ada)
                 DB::table('pesertaturnamen')
                     ->where('id_peserta', $peserta->id_peserta)
-                    ->update(['team_id' => null, 'slot_index' => null]);
+                    ->update(['id_tim' => null, 'slot_index' => null]);
 
                 // 4. Isi slot baru
                 DB::table('pesertaturnamen')
                     ->where('id_peserta', $peserta->id_peserta)
                     ->update([
-                        'team_id' => $newTeamId,
+                        'id_tim' => $newTeamId,
                         'slot_index' => $newSlotIndex
                     ]);
             });
@@ -793,5 +932,47 @@ class SiswaTournamentController extends Controller
             ]
         ]);
     }
+
+    public function submitAll(Request $request, $id)
+    {
+        // id = id_turnamen
+        $userId = session('pengguna_id');
+        if (!$userId) {
+            return response()->json(['message' => 'Sesi tidak valid.'], 401);
+        }
+
+        // temukan tim dan peserta
+        $anggota = DB::table('tim_anggota')->where('id_pengguna', $userId)->first();
+        if (!$anggota) return response()->json(['message' => 'Anda belum berada di tim.'], 403);
+
+        $peserta = DB::table('pesertaturnamen')
+            ->where('id_turnamen', $id)
+            ->where('id_tim', $anggota->id_tim)
+            ->first();
+        dd($peserta);
+        if (!$peserta) return response()->json(['message' => 'Peserta tim tidak ditemukan.'], 404);
+
+        $now = Carbon::now();
+
+        // tandai peserta selesai
+        DB::table('pesertaturnamen')
+            ->where('id_peserta', $peserta->id_peserta)
+            ->update([
+                'status' => 'finished',
+                'waktu_selesai' => $now,
+                'waktu_submit' => $now,
+                'updated_at' => Carbon::now()
+            ]);
+
+        // hitung skor akhir (team)
+        $teamScore = \App\Services\TournamentScoringService::calculateTeamScore($anggota->id_tim, $id);
+
+        DB::table('pesertaturnamen')
+            ->where('id_peserta', $peserta->id_peserta)
+            ->update(['skor_akhir' => $teamScore]);
+
+        return response()->json(['success' => true, 'skor_akhir' => $teamScore]);
+    }
+
 
 }

@@ -100,6 +100,7 @@
                                 // Ambil status LANGSUNG dari backend
                                 const statusText = (t.status || 'menunggu').toLowerCase();
                                 const peserta = (t.peserta_count || 0) + ' / ' + (t.max_peserta || '-');
+                                console.log(statusText);
                                 
                                 // Tentukan warna berdasarkan status
                                 let statusClass = 'text-blue-400'; // default (menunggu)

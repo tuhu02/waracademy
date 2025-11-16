@@ -601,7 +601,7 @@
                     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
                     // Kirim ke backend
-                    fetch('/guru/tournament', {
+                    fetch('/guru/tournament/store', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

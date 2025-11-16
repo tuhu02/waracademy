@@ -139,6 +139,28 @@ class TournamentController extends Controller
                 }
             }
 
+
+            // === BAGIAN 3: BUAT TIM OTOMATIS ===
+            if ($data['mode'] === 'tim') {
+
+                $turnamen = DB::table('turnamen')->where('id_turnamen', $turnamenId)->first();
+
+                $maxMembers  = (int) ($turnamen->max_team_members ?? 4);
+                $maxPeserta  = (int) ($turnamen->max_peserta ?? 30);
+
+                $totalTeams = (int) ceil($maxPeserta / max(1, $maxMembers));
+
+                for ($i = 1; $i <= $totalTeams; $i++) {
+                    DB::table('tim_turnamen')->insert([
+                        'id_turnamen' => $turnamenId,
+                        'nama_tim' => "Tim {$i}",
+                        'created_at' => $now,
+                        'updated_at' => $now
+                    ]);
+                }
+            }
+
+
             return ['id' => $turnamenId, 'kode' => $kode];
         });
 
@@ -349,25 +371,72 @@ class TournamentController extends Controller
         if (!$turnamen || $turnamen->status !== 'Menunggu') {
             return response()->json(['message' => 'Turnamen sudah dimulai atau selesai.'], 422);
         }
-        
+
         $start = Carbon::now();
         $end   = $start->copy()->addMinutes($turnamen->durasi_pengerjaan);
 
-        DB::table('turnamen')
-            ->where('id_turnamen', $id)
-            ->update([
-                'status' => 'Berlangsung',
-                'tanggal_pelaksanaan' => $start,
-                'start_time' => $start,
-                'end_time' => $end,
-            ]);
+        DB::transaction(function() use ($id, $turnamen, $start, $end) {
+
+            // ============================
+            // 1) Update status turnamen
+            // ============================
+            DB::table('turnamen')
+                ->where('id_turnamen', $id)
+                ->update([
+                    'status' => 'Berlangsung',
+                    'tanggal_pelaksanaan' => $start,
+                    'start_time' => $start,
+                    'end_time' => $end,
+                    'updated_at' => Carbon::now()
+                ]);
+
+            // ============================
+            // 2) Mode TIM → daftar tim sebagai peserta
+            // ============================
+            if ($turnamen->mode === 'tim') {
+
+                // Ambil semua tim yang sudah dibuat otomatis pada saat create
+                $teams = DB::table('tim_turnamen')
+                    ->where('id_turnamen', $id)
+                    ->get();
+
+                foreach ($teams as $team) {
+
+                    // Safety: hapus jika pernah ada duplikat (harusnya tidak ada)
+                    DB::table('pesertaturnamen')
+                        ->where('id_turnamen', $id)
+                        ->where('id_tim', $team->id_tim)
+                        ->delete();
+
+                    // Tambahkan tim sebagai 1 "peserta"
+                    DB::table('pesertaturnamen')->insert([
+                        'id_turnamen' => $id,
+                        'id_pengguna' => null,     // Karena ini peserta tim, bukan individu
+                        'id_tim' => $team->id_tim, // <-- Penting!
+                        'skor_akhir' => 0,
+                        'peringkat' => null,
+                        'joined_at' => $start,
+                        'status' => 'active',
+                        'lives_remaining' => null,
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now()
+                    ]);
+                }
+            }
+
+            // ============================
+            // 3) Mode SOLO → tidak perlu apa-apa
+            // ============================
+            // Peserta sudah masuk otomatis saat siswa join
+        });
 
         return response()->json([
-            'message' => 'Turnamen berhasil dimulai!',
-            'start_time' => $start,
-            'end_time' => $end,
+            'message'    => 'Turnamen berhasil dimulai!',
+            'start_time' => $start->toDateTimeString(),
+            'end_time'   => $end->toDateTimeString(),
         ]);
     }
+
 
     /**
      * [BARU] [AJAX] Mengakhiri turnamen (mengubah status menjadi Selesai)
@@ -423,4 +492,41 @@ class TournamentController extends Controller
             }
         }
     }
+
+
+
+
+    public function getData()
+    {
+        $guruId = session('pengguna_id'); 
+
+        $turnamen = DB::table('turnamen')
+            ->leftJoin('pesertaturnamen', 'turnamen.id_turnamen', '=', 'pesertaturnamen.id_turnamen')
+            ->where('turnamen.dibuat_oleh', $guruId)
+            ->select(
+                'turnamen.id_turnamen',
+                'turnamen.nama_turnamen',
+                'turnamen.status',
+                'turnamen.max_peserta',
+                DB::raw('COUNT(pesertaturnamen.id_peserta) as peserta_count')
+            )
+            ->groupBy(
+                'turnamen.id_turnamen',
+                'turnamen.nama_turnamen',
+                'turnamen.status',
+                'turnamen.max_peserta'
+            )
+            ->orderBy('turnamen.created_at', 'desc')
+            ->get();
+
+        return response()->json($turnamen);
+    }
+
+
+    public function create()
+    {
+        return view('guru.tournament.create');
+    }
+
+
 }

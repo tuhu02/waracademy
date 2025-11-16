@@ -161,6 +161,10 @@
                 </div>
 
                 <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {{-- <pre class="text-white">
+                        {{ json_encode($teams, JSON_PRETTY_PRINT) }}
+                    </pre> --}}
+
                     <template x-for="(team, teamIndex) in teams" :key="'team-' + team.id + '-' + teamIndex">
                         <div class="team-box">
                             <h3 class="text-xl font-bold text-cyan-300 mb-4" x-text="team.name"></h3>
@@ -172,10 +176,10 @@
                                                                 'slot-box': true,
                                                                 'occupied': member !== null,
                                                                 'is-me': member !== null && member.id === myId
-                                                             }">
+                                                            }">
 
                                             <template x-if="member">
-                                                <img :src="member.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.username) + '&background=0b2239&color=38bdf8'"
+                                                <img :src="'/avatars/' + (member.avatar_url ?? 'cat.png')"
                                                     :alt="member.username" class="slot-avatar">
                                             </template>
 
@@ -246,8 +250,7 @@
                             <div class="flex flex-col items-center w-20">
                                 <div
                                     class="w-20 h-20 rounded-full border-2 border-cyan-400 flex items-center justify-center overflow-hidden bg-gray-800">
-                                    <img :src="p.avatar_url || 'https://ui-avatars.com/api/?name=' + p.username + '&background=0b2239&color=38bdf8'"
-                                        :alt="p.username" class="w-full h-full object-cover">
+                                    <img :src="'/avatars/' + (p.avatar_url ?? 'cat.png')" :alt="p.username" class="w-full h-full object-cover">
                                 </div>
                                 <p class="text-sm text-gray-300 mt-2 truncate w-full text-center" x-text="p.username"></p>
                             </div>
@@ -418,7 +421,7 @@
                                 'Accept': 'application/json',
                                 'X-CSRF-TOKEN': this.csrfToken
                             },
-                            body: JSON.stringify({ team_id: teamId, slot_index: slotIndex })
+                            body: JSON.stringify({ id_tim: teamId, slot_index: slotIndex })
                         });
 
                         if (!res.ok) {
