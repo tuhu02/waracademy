@@ -18,54 +18,6 @@
             font-family: 'Poppins', sans-serif;
             overflow-x: hidden;
         }
-
-        .sidebar {
-            background: #0b2239;
-            width: 250px;
-            min-height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.4);
-            z-index: 100;
-        }
-
-        .sidebar h1 {
-            font-family: 'Black Ops One', cursive;
-            font-size: 26px;
-            color: #38bdf8;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .sidebar a,
-        .sidebar button {
-            display: block;
-            color: #a0aec0;
-            padding: 10px 15px;
-            margin: 5px 0;
-            border-radius: 10px;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-weight: 500;
-            border: none;
-            background: transparent;
-            width: 100%;
-            text-align: left;
-            cursor: pointer;
-        }
-
-        .sidebar a:hover,
-        .sidebar button:hover,
-        .sidebar a.active {
-            background: #1e3a8a;
-            color: #fff;
-        }
-
         .content {
             margin-left: 270px;
             padding: 40px;
@@ -249,20 +201,7 @@
 <body x-data="tournamentApp()">
     <div id="tsparticles"></div>
 
-    <div class="sidebar">
-        <div>
-            <h1>War Academy</h1>
-            <a href="#">🏠 Dashboard</a>
-            <a href="#">📘 Bank Soal</a>
-            <a href="#" class="active">🏆 Turnamen</a>
-            <a href="#">📊 Statistik Siswa</a>
-        </div>
-        <div>
-            <button type="button" class="text-red-400 hover:text-red-500">
-                🚪 Logout
-            </button>
-        </div>
-    </div>
+     @include('guru.components.sidebar-guru')
 
     <div class="content">
         <div class="flex justify-between items-center mb-6">
@@ -446,11 +385,11 @@
             <h3>🎉 Turnamen Berhasil Dibuat!</h3>
             <p class="text-gray-400 mb-4">Bagikan kode room ini kepada siswa untuk bergabung:</p>
             <div class="code-display" x-text="roomCode"></div>
-            <div class="flex gap-3 justify-center">
+                <div class="flex gap-3 justify-center">
                 <button type="button" @click="copyRoomCode" class="btn-primary">
                     📋 Salin Kode
                 </button>
-                <a href="#" class="btn-secondary">
+                <a :href="roomLink" x-show="showSuccess" class="btn-secondary">
                     📊 Lihat Dashboard Turnamen
                 </a>
             </div>
@@ -483,6 +422,7 @@
                     ]
                 },
                 roomCode: '',
+                roomLink: '',
                 showSuccess: false,
 
                 addQuestion() {
@@ -620,10 +560,20 @@
                             return res.json();
                         })
                         .then(json => {
-                            // Backend menyediakan room_code
+                            // Backend menyediakan room_code dan id turnamen
                             this.roomCode = json.room_code || this.generateRoomCode();
+                            this.roomLink = json.turnamen_id ? ('/guru/tournament/' + json.turnamen_id) : '#';
                             this.showSuccess = true;
                             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                            // Redirect teacher to the show page so they immediately see
+                            // the created tournament, questions and answer keys.
+                            if (json.turnamen_id) {
+                                // short delay so flash message is visible briefly
+                                setTimeout(() => {
+                                    window.location.href = this.roomLink;
+                                }, 700);
+                            }
                         })
                         .catch(err => {
                             console.error('Error creating tournament:', err);

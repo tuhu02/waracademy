@@ -20,6 +20,27 @@
             }
         }
   </script>
+  <style>
+    /* Goyangan mahkota */
+    @keyframes crownBounce {
+        0% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-3px) rotate(-8deg); }
+        100% { transform: translateY(0) rotate(0deg); }
+    }
+
+    /* Efek glow badge */
+    .glow-rank {
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.5),
+                    0 0 20px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Glossy gradient */
+    .glossy {
+        background: linear-gradient(145deg, rgba(255,255,255,0.35), rgba(255,255,255,0.15));
+        backdrop-filter: blur(4px);
+    }
+</style>
+
 </head>
 
 <body class="font-poppins relative bg-gradient-to-b from-[#0f1b2e] via-[#304863] to-[#3b5875] min-h-screen flex flex-col justify-between p-6 text-white overflow-hidden select-none">
@@ -80,13 +101,52 @@
   <!-- MAIN SECTION -->
   <div class="flex-1 relative flex justify-center items-center z-10">
     <div class="absolute top-0 left-0 mt-6 ml-6 text-center animate-slideInLeft delay-200">
-      <div class="border border-[#6aa8fa]/60 rounded-xl w-44 h-40 p-4 bg-white/10 backdrop-blur-md shadow-lg hover:shadow-[0_0_25px_rgba(70,150,255,0.4)] transition duration-300">
-        <h2 class="font-semibold text-[#cfe4ff] mb-3 drop-shadow-sm">Achievement</h2>
-        <div class="space-y-2 text-blue-100">
-          <div class="w-28 h-1 bg-blue-300/60 rounded"></div>
-          <div class="w-32 h-1 bg-blue-200/60 rounded"></div>
-          <div class="w-24 h-1 bg-blue-200/50 rounded"></div>
-        </div>
+      <div class="border border-[#6aa8fa]/60 rounded-xl w-56 p-4 
+          bg-white/10 backdrop-blur-md shadow-lg animate-fadeIn">
+
+          <h2 class="font-semibold text-[#cfe4ff] mb-3 text-center tracking-wide">
+              TOP 5 PLAYER
+          </h2>
+
+          @forelse ($topPlayers as $rank => $p)
+              <div class="flex items-center gap-3 mb-2 
+                          bg-white/5 border border-white/10 rounded-lg px-3 py-2 
+                          hover:bg-white/10 transition-all">
+
+                  {{-- Ranking Badge --}}
+                  <div class="
+                      relative w-9 h-9 flex items-center justify-center font-bold text-sm rounded-xl glossy
+                      @if ($rank == 0) bg-yellow-400 text-black glow-rank
+                      @elseif ($rank == 1) bg-gray-200 text-black glow-rank
+                      @elseif ($rank == 2) bg-orange-600 text-white glow-rank
+                      @else bg-[#6aa8fa]/20 text-white
+                      @endif
+                  ">
+                      {{ $rank + 1 }}
+
+                      {{-- Animated Crown for Rank 1-3 --}}
+                      @if ($rank <= 2)
+                          <span class="absolute -top-3 text-sm"
+                                style="animation: crownBounce 2s infinite;">
+                              👑
+                          </span>
+                      @endif
+                  </div>
+
+                  {{-- Username --}}
+                  <span class="text-blue-100 text-sm font-medium">
+                      {{ $p->username }}
+                  </span>
+
+                  {{-- EXP --}}
+                  <span class="ml-auto text-xs text-blue-200">
+                      {{ $p->total_exp }} EXP
+                  </span>
+
+              </div>
+          @empty
+              <p class="text-blue-200 text-sm text-center">Belum ada data</p>
+          @endforelse
       </div>
     </div>
 
@@ -175,16 +235,18 @@
     </div>
 
     <!-- TOP 100 -->
-    <button class="relative bg-gradient-to-b from-[#2f5fa8] to-[#0c2957] text-white px-6 py-2 rounded-xl font-semibold 
-                  border border-[#1b3e75]
-                  shadow-[0_4px_10px_rgba(0,0,30,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)]
-                  hover:scale-105 hover:shadow-[0_0_20px_rgba(70,150,255,0.7)]
-                  transition-all duration-300 ease-in-out overflow-hidden group">
-      <span class="relative z-10">🏆 Top 100</span>
-      <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent 
-                    translate-x-[-100%] group-hover:translate-x-[100%] 
-                    transition-transform duration-700"></span>
-    </button>
+    <a href="{{ route('leaderboard.top100') }}">
+        <button class="relative bg-gradient-to-b from-[#2f5fa8] to-[#0c2957] text-white px-6 py-2 rounded-xl font-semibold 
+                      border border-[#1b3e75]
+                      shadow-[0_4px_10px_rgba(0,0,30,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)]
+                      hover:scale-105 hover:shadow-[0_0_20px_rgba(70,150,255,0.7)]
+                      transition-all duration-300 ease-in-out overflow-hidden group">
+          <span class="relative z-10">🏆 Top 100</span>
+          <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent 
+                        translate-x-[-100%] group-hover:translate-x-[100%] 
+                        transition-transform duration-700"></span>
+        </button>
+    </a>
   </div>
 
   <!-- Cahaya kecil -->
