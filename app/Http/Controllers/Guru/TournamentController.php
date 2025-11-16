@@ -18,11 +18,42 @@ class TournamentController extends Controller
     {
         // Fetch tournaments with participant count
         $turnamens = DB::table('turnamen')
-            ->leftJoin('pesertaturnamen', 'turnamen.id_turnamen', '=', 'pesertaturnamen.id_turnamen')
-            ->select('turnamen.*', DB::raw('COUNT(pesertaturnamen.id_peserta) as peserta_count'))
-            ->groupBy('turnamen.id_turnamen')
-            ->orderBy('turnamen.created_at', 'desc')
-            ->get();
+        ->leftJoin('pesertaturnamen', 'turnamen.id_turnamen', '=', 'pesertaturnamen.id_turnamen')
+        ->select(
+            'turnamen.id_turnamen',
+            'turnamen.nama_turnamen',
+            'turnamen.kode_room',
+            'turnamen.dibuat_oleh',
+            'turnamen.level_minimal',
+            'turnamen.status',
+            'turnamen.mode',
+            'turnamen.max_team_members',
+            'turnamen.durasi_pengerjaan',
+            'turnamen.max_peserta',
+            'turnamen.deskripsi',
+            'turnamen.bonus_exp',
+            'turnamen.created_at',
+            'turnamen.updated_at',
+            DB::raw('COUNT(pesertaturnamen.id_peserta) as peserta_count')
+        )
+        ->groupBy(
+            'turnamen.id_turnamen',
+            'turnamen.nama_turnamen',
+            'turnamen.kode_room',
+            'turnamen.dibuat_oleh',
+            'turnamen.level_minimal',
+            'turnamen.status',
+            'turnamen.mode',
+            'turnamen.max_team_members',
+            'turnamen.durasi_pengerjaan',
+            'turnamen.max_peserta',
+            'turnamen.deskripsi',
+            'turnamen.bonus_exp',
+            'turnamen.created_at',
+            'turnamen.updated_at'
+        )
+        ->orderBy('turnamen.created_at', 'desc')
+        ->get();    
 
         return view('guru.tournament.index', ['turnamens' => $turnamens]);
     }
@@ -34,8 +65,21 @@ class TournamentController extends Controller
     {
         $turnamens = DB::table('turnamen')
             ->leftJoin('pesertaturnamen', 'turnamen.id_turnamen', '=', 'pesertaturnamen.id_turnamen')
-            ->select('turnamen.*', DB::raw('COUNT(pesertaturnamen.id_peserta) as peserta_count'))
-            ->groupBy('turnamen.id_turnamen')
+            ->select(
+                'turnamen.id_turnamen',
+                'turnamen.nama_turnamen',
+                'turnamen.max_peserta',
+                'turnamen.status',
+                'turnamen.created_at',
+                DB::raw('COUNT(pesertaturnamen.id_peserta) as peserta_count')
+            )
+            ->groupBy(
+                'turnamen.id_turnamen',
+                'turnamen.nama_turnamen',
+                'turnamen.max_peserta',
+                'turnamen.status',
+                'turnamen.created_at'
+            )
             ->orderBy('turnamen.created_at', 'desc')
             ->get();
 

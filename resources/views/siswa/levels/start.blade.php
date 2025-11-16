@@ -447,8 +447,6 @@
   <div id="countdownStart" class="start-countdown"></div>
   <button id="backButton" class="back-btn">← Kembali</button>
 
-
-
   <div id="quiz" class="soal-container">
     <h1 class="text-3xl mb-6 text-center text-glow font-bold">Level {{ $id }}</h1>
     <div id="questionBox"></div>
