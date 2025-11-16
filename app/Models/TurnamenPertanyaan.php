@@ -22,4 +22,8 @@ class TurnamenPertanyaan extends Model
         'mata_pelajaran',
         'created_at',
     ];
+    public function jawaban()
+    {
+        return $this->hasMany(TurnamenPilihanJawaban::class, 'id_pertanyaan_turnamen');
+    }
 }

@@ -27,18 +27,7 @@
 <body>
     <div id="tsparticles"></div>
 
-    <div class="sidebar">
-        @include('guru.components.sidebar-guru')
-        <div>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit"
-                    class="block w-full text-left px-4 py-2 text-white-400 hover:text-cyan-500 transition">
-                    🚪 Logout
-                </button>
-            </form>
-        </div>
-    </div>
+    @include('guru.components.sidebar-guru')
 
     <div class="content">
         <div class="flex justify-between items-center mb-6">
@@ -66,68 +55,113 @@
         </div>
     </div>
 
-    <script>
-        tsParticles.load("tsparticles", { /* ... (konfigurasi particles Anda) ... */ });
-    </script>
+        <script>
+            tsParticles.load("tsparticles", {
+                background: { color: { value: "transparent" } },
+                fpsLimit: 60,
+                interactivity: {
+                    events: {
+                        onHover: { enable: true, mode: "repulse" },
+                        resize: true
+                    },
+                    modes: {
+                        repulse: { distance: 100, duration: 0.4 }
+                    }
+                },
+                particles: {
+                    color: { value: "#38bdf8" },
+                    links: {
+                        color: "#38bdf8",
+                        distance: 150,
+                        enable: true,
+                        opacity: 0.3,
+                        width: 1
+                    },
+                    move: {
+                        direction: "none",
+                        enable: true,
+                        outModes: { default: "bounce" },
+                        random: false,
+                        speed: 1,
+                        straight: false
+                    },
+                    number: {
+                        density: { enable: true, area: 800 },
+                        value: 80
+                    },
+                    opacity: { value: 0.3 },
+                    shape: { type: "circle" },
+                    size: { value: { min: 1, max: 3 } }
+                },
+                detectRetina: true
+            });
+        </script>
         <script>
             // Poll the server every 10 seconds for updated tournaments
-            (function pollTournaments(){
+            (function pollTournaments() {
                 const url = '{{ route("guru.tournament.data") }}';
-                const baseShowUrl = '{{ url('/guru/tournament') }}'; // Misal: /guru/tournament/123
+                const baseShowUrl = '{{ url("/guru/tournament") }}';
 
                 fetch(url, { headers: { 'Accept': 'application/json' } })
-                        .then(res => res.json())
-                        .then(data => {
-                            const tbody = document.querySelector('table tbody');
-                            if (!tbody) return;
+                    .then(res => res.json())
+                    .then(data => {
+                        const tbody = document.getElementById('tournament-tbody');
+                        if (!tbody) return;
 
-                            if (!Array.isArray(data) || data.length === 0) {
-                                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400">Belum ada turnamen.</td></tr>';
-                                return;
-                            }
+                        if (!Array.isArray(data) || data.length === 0) {
+                            tbody.innerHTML = `
+                                <tr>
+                                    <td colspan="4" class="text-center text-gray-400">
+                                        Belum ada turnamen.
+                                    </td>
+                                </tr>`;
+                            return;
+                        }
 
-                            const rows = data.map(t => {
-                                // Ambil status LANGSUNG dari backend
-                                const statusText = (t.status || 'menunggu').toLowerCase();
-                                const peserta = (t.peserta_count || 0) + ' / ' + (t.max_peserta || '-');
-                                
-                                // Tentukan warna berdasarkan status
-                                let statusClass = 'text-blue-400'; // default (menunggu)
-                                if (statusText === 'berlangsung') statusClass = 'text-green-400';
-                                if (statusText === 'selesai') statusClass = 'text-yellow-400';
+                        const rows = data.map(t => {
+                            // === Perbaikan kolom ===
+                            const id = t.id_turnamen;
+                            const nama = t.nama_turnamen ?? '-';
+                            const pesertaCount = t.peserta_count ?? 0;
+                            const maxPeserta = t.max_peserta ?? '-';
 
-                                // Tentukan Teks & Link Aksi berdasarkan status
-                                let aksiText = 'Detail';
-                                let detailHref = baseShowUrl + '/' + encodeURIComponent(t.id_turnamen || t.id);
+                            // status dari DB bisa "Menunggu" / "Berlangsung" / "Selesai"
+                            const rawStatus = (t.status || 'Menunggu').toString().trim();
+                            const statusLower = rawStatus.toLowerCase();
 
-                                if (statusText === 'menunggu') {
-                                    aksiText = 'Buka Lobi';
-                                } else if (statusText === 'berlangsung') {
-                                    aksiText = 'Monitor';
-                                } else if (statusText === 'selesai') {
-                                    aksiText = 'Lihat Hasil';
-                                }
-                                
-                                // Format status agar huruf depannya kapital
-                                const formattedStatus = statusText.charAt(0).toUpperCase() + statusText.slice(1);
+                            let statusClass = 'text-blue-400';
+                            if (statusLower === 'berlangsung') statusClass = 'text-green-400';
+                            if (statusLower === 'selesai') statusClass = 'text-yellow-400';
 
-                                return `
-                                    <tr>
-                                        <td>${escapeHtml(t.nama_turnamen || '-')}</td>
-                                        <td>${escapeHtml(peserta)}</td>
-                                        <td><span class="${statusClass}">${escapeHtml(formattedStatus)}</span></td>
-                                        <td><a href="${detailHref}" class="text-cyan-400 hover:underline">${aksiText}</a></td>
-                                    </tr>
-                                `;
-                            }).join('');
+                            // Teks aksi sesuai status
+                            let aksiText = 'Detail';
+                            if (statusLower === 'menunggu') aksiText = 'Buka Lobi';
+                            else if (statusLower === 'berlangsung') aksiText = 'Monitor';
+                            else if (statusLower === 'selesai') aksiText = 'Lihat Hasil';
 
-                            tbody.innerHTML = rows;
-                        })
-                        .catch(err => console.error('Polling tournaments failed', err))
-                        .finally(() => setTimeout(pollTournaments, 10000));
+                            const detailHref = `${baseShowUrl}/${encodeURIComponent(id)}`;
+                            
+                            return `
+                                <tr>
+                                    <td>${escapeHtml(nama)}</td>
+                                    <td>${escapeHtml(pesertaCount + ' / ' + maxPeserta)}</td>
+                                    <td><span class="${statusClass}">${escapeHtml(rawStatus)}</span></td>
+                                    <td>
+                                        <a href="${detailHref}" class="text-cyan-400 hover:underline">
+                                            ${aksiText}
+                                        </a>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
 
-                // basic HTML escape
-                function escapeHtml(str){
+                        tbody.innerHTML = rows;
+                    })
+                    .catch(err => console.error('Polling tournaments failed:', err))
+                    .finally(() => setTimeout(pollTournaments, 10000));
+
+                /** Escape HTML */
+                function escapeHtml(str) {
                     return String(str)
                         .replace(/&/g, '&amp;')
                         .replace(/</g, '&lt;')

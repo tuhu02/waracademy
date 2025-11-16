@@ -6,9 +6,11 @@ use App\Http\Controllers\LevelController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Guru\TournamentController;
 use App\Http\Controllers\Guru\GuruController;
+use App\Http\Controllers\Guru\BankSoalController;
 use App\Http\Controllers\SiswaTournamentController;
 use App\Http\Controllers\TopController; 
 use App\Models\Pengguna;
+use App\Models\TurnamenPertanyaan;
 use App\Http\Controllers\LeaderboardController;
 
 Route::get('/', function () {
@@ -76,9 +78,6 @@ Route::put('/profil/update/{id}', [ProfileController::class, 'update'])->name('p
 // leaderboard
 Route::get('/leaderboard/top100', [LeaderboardController::class, 'top100'])
     ->name('leaderboard.top100');
-
-
-
 
 // Route::get('/level', function () {
 //     if (!session()->has('pengguna_id')) {
@@ -153,6 +152,32 @@ Route::post('/guru/tournament/{id}/start', [TournamentController::class, 'startT
 // End tournament (POST)
 Route::post('/guru/tournament/{id}/end', [TournamentController::class, 'endTournament'])->name('guru.tournament.end');
 
+Route::get('/guru/soal/json', function () {
+
+    return TurnamenPertanyaan::with([
+        'jawaban' => function ($q) {
+            $q->orderBy('id_jawaban'); // urutkan stabil A–D
+        }
+    ])
+    ->get()
+    ->map(function ($soal) {
+
+        // cari index jawaban benar (0–3)
+        $correctIndex = $soal->jawaban->search(function ($j) {
+            return $j->adalah_benar == 1;
+        });
+
+        return [
+            'text' => $soal->teks_pertanyaan,
+            'options' => $soal->jawaban->pluck('teks_jawaban')->toArray(),
+            'correctAnswer' => $correctIndex,
+            'difficulty' => $soal->tingkat_kesulitan ?? 'sedang',
+            'subject' => $soal->mata_pelajaran ?? 'umum',
+        ];
+    });
+
+})->name('guru.soal.json');
+
 // Halaman kisi-kisi (preview)
 Route::get('/level/{id}', function ($id) {
     return view('siswa.levels.preview', ['id' => $id]);
@@ -194,3 +219,8 @@ Route::get('/level/{id}/start', [LevelController::class, 'start'])->name('level.
 // submit jawaban → proses hasil
 Route::post('/level/{id}/submit', [LevelController::class, 'submit'])->name('level.submit');
 
+Route::prefix('guru')->group(function () {
+    Route::get('/bank-soal', [BankSoalController::class, 'index'])->name('guru.soal.index');
+    Route::get('/bank-soal/detail/{id}', [BankSoalController::class, 'detail'])->name('guru.soal.detail');
+    Route::get('/bank-soal/data', [BankSoalController::class, 'data'])->name('guru.soal.data');
+});

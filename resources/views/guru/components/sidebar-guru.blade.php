@@ -48,14 +48,15 @@
             🏠 Dashboard
         </a>
 
-        <a href="#">📘 Bank Soal</a>
+        <a href="{{ route('guru.soal.index') }}"
+            class="{{ request()->routeIs('guru.soal.index') ? 'active' : '' }}">
+            📘 Bank Soal
+        </a>
 
         <a href="{{ route('guru.tournament.index') }}"
            class="{{ request()->routeIs('guru.tournament.index') ? 'active' : '' }}">
             🏆 Turnamen
         </a>
-
-        <a href="#">📊 Statistik Siswa</a>
     </div>
 
     <div>

@@ -104,7 +104,6 @@
 <body>
     <div id="tsparticles"></div>
 
-    {{-- Sidebar --}}
     @include('guru.components.sidebar-guru')
 
     <div class="content">
@@ -113,15 +112,15 @@
         <!-- Statistik -->
         <div class="grid-stats">
             <div class="card">
-                <h2>1250</h2>
+                <h2>{{ $totalSoal }}</h2>
                 <p>Total Soal</p>
             </div>
             <div class="card">
-                <h2>87</h2>
+                <h2>{{ $totalSiswa }}</h2>
                 <p>Siswa Terdaftar</p>
             </div>
             <div class="card">
-                <h2>3</h2>
+                <h2>{{ $turnamenAktif }}</h2>
                 <p>Turnamen Aktif</p>
             </div>
         </div>
@@ -139,24 +138,36 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Turnamen Sains Nasional</td>
-                        <td>15 November 2025</td>
-                        <td>42</td>
-                        <td><span class="text-green-400">Sedang Berlangsung</span></td>
-                    </tr>
-                    <tr>
-                        <td>Kompetisi Matematika</td>
-                        <td>10 Oktober 2025</td>
-                        <td>35</td>
-                        <td><span class="text-yellow-400">Selesai</span></td>
-                    </tr>
-                    <tr>
-                        <td>English Debate Challenge</td>
-                        <td>2 Desember 2025</td>
-                        <td>58</td>
-                        <td><span class="text-blue-400">Akan Datang</span></td>
-                    </tr>
+                    @forelse ($turnamenTerbaru as $t)
+                        <tr>
+                            <td>{{ $t->nama_turnamen }}</td>
+                            <td>{{ \Carbon\Carbon::parse($t->tanggal_pelaksanaan)->format('d F Y') }}</td>
+
+                            <td>
+                                {{
+                                    DB::table('pesertaturnamen')
+                                    ->where('id_turnamen', $t->id_turnamen)
+                                    ->count()
+                                }}
+                            </td>
+
+                            <td>
+                                @if($t->status === 'Sedang Berlangsung')
+                                    <span class="text-green-400">{{ $t->status }}</span>
+                                @elseif($t->status === 'Selesai')
+                                    <span class="text-yellow-400">{{ $t->status }}</span>
+                                @else
+                                    <span class="text-blue-400">{{ $t->status }}</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-gray-400">
+                                Belum ada turnamen
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
