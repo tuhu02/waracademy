@@ -40,20 +40,22 @@ class SiswaTournamentController extends Controller
             return response()->json(['message' => 'Turnamen tidak bisa diikuti saat ini.'], 403);
         }
 
-        // Cek level minimal yang diperlukan
-        $levelMinimal = $turnamen->level_minimal ?? 1;
+        // Cek level minimal yang diperlukan (bandingkan berdasarkan nomor_level di tabel `level`)
+        $levelMinimal = 20;
         if ($levelMinimal > 0) {
-            // Cek apakah user sudah menyelesaikan level minimal (ada record di progreslevelpengguna)
+            // Cek apakah user sudah menyelesaikan level minimal: join ke tabel `level` dan bandingkan `nomor_level`
             $userLevel = DB::table('progreslevelpengguna')
-                ->where('id_pengguna', $penggunaId)
-                ->where('id_level', '>=', $levelMinimal)
+                ->join('level', 'progreslevelpengguna.id_level', '=', 'level.id_level')
+                ->where('progreslevelpengguna.id_pengguna', $penggunaId)
+                ->where('level.nomor_level', '>=', $levelMinimal)
                 ->exists();
 
-            // Atau bisa juga cek level tertinggi yang sudah diselesaikan
+            // Jika tidak ada record langsung, periksa level tertinggi (nomor_level) yang telah diselesaikan
             if (!$userLevel) {
                 $maxLevelCompleted = DB::table('progreslevelpengguna')
-                    ->where('id_pengguna', $penggunaId)
-                    ->max('id_level');
+                    ->join('level', 'progreslevelpengguna.id_level', '=', 'level.id_level')
+                    ->where('progreslevelpengguna.id_pengguna', $penggunaId)
+                    ->max('level.nomor_level');
 
                 if (!$maxLevelCompleted || $maxLevelCompleted < $levelMinimal) {
                     return response()->json([
