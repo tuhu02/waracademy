@@ -8,27 +8,25 @@
 <script type="module">
   import { initMusic, fadeInMusic } from '/js/music.js';
 
-  // 1. Ambil setting dari localStorage (kunci yg sama dgn Home)
+  // 1. Ambil setting dari localStorage
   const savedVol = parseFloat(localStorage.getItem("volume"));
   const savedMute = localStorage.getItem("muted");
 
-  // 2. Terapkan nilai default jika tidak ada
+  // 2. Terapkan nilai default
   const volume = !isNaN(savedVol) ? savedVol : 0.5;
-  const muted = savedMute === "true"; // Pastikan logikanya sama
+  const muted = savedMute === "true"; 
 
-  // 3. Inisialisasi musik baru
+  // 3. Inisialisasi musik
   const music = initMusic('/audio/classical.mp3');
 
-  // 4. Terapkan setting volume & mute ke musik baru INI
+  // 4. Terapkan setting
   if (music) {
-      // Kita asumsikan initMusic() mengembalikan elemen audio
-      // atau objek yg punya properti .volume dan .muted
       music.volume = volume;
       music.muted = muted;
 
-      // 5. Hanya mainkan (fade in) jika diizinkan
+      // 5. Mainkan
       if (!music.muted && music.volume > 0) {
-          fadeInMusic(1500); // efek masuk halus
+          fadeInMusic(1500); 
       }
   } else {
       console.error("Gagal menginisialisasi musik dari music.js");
@@ -42,11 +40,13 @@
       font-family: 'Poppins', sans-serif;
       background: linear-gradient(to bottom, #0f1b2e, #304863 50%, #3b5875);
       color: white;
-      overflow-x: hidden
+      /* overflow-x: hidden; -> Dihapus biar aman di mobile, dihandle tailwind */
+      min-height: 100vh;
     }
 
-    /* Scrollbar */
+    /* Scrollbar Custom */
     ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
     ::-webkit-scrollbar-thumb {
       background: linear-gradient(180deg, #6aa8fa, #1e3a8a);
       border-radius: 10px;
@@ -54,9 +54,10 @@
 
     /* Canvas Partikel */
     #particles {
-      position: absolute;
+      position: fixed; /* Ubah ke fixed agar background tetap saat scroll */
       inset: 0;
       z-index: 0;
+      pointer-events: none;
     }
 
     /* Glow text */
@@ -75,27 +76,22 @@
     }
 
     .kisi-container {
-      max-width: 2000px;
-      max-height: 430px;
-      overflow-y: auto;
+      /* Hapus max-width/height fixed, ganti dengan utility tailwind di HTML */
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.08);
       backdrop-filter: blur(10px);
       border-radius: 18px;
       box-shadow: 0 0 25px rgba(80,130,255,0.3);
-      padding: 28px 30px;
       position: relative;
       z-index: 2;
       animation: slideDown 0.8s ease forwards;
     }
 
+    /* Efek background bergerak di container */
     .kisi-container::before {
       content: "";
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: max-content;
+      inset: 0;
       background: radial-gradient(circle at 30% 30%, rgba(100,150,255,0.18), transparent 70%),
                   radial-gradient(circle at 70% 70%, rgba(147,197,253,0.12), transparent 70%);
       background-size: 200% 200%;
@@ -113,13 +109,12 @@
     .section {
       position: relative;
       z-index: 2;
-      margin-bottom: 18px;
-      padding: 16px 20px;
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 14px;
       transition: all 0.4s ease;
       overflow: hidden;
+      height: 100%; /* Agar tinggi kartu seragam */
     }
 
     .section:hover {
@@ -136,6 +131,7 @@
       text-transform: uppercase;
       letter-spacing: 1px;
       margin-bottom: 8px;
+      font-size: 0.9rem; /* Ukuran font sedikit disesuaikan */
     }
 
     .section ul {
@@ -148,13 +144,16 @@
     .section ul li {
       position: relative;
       padding-left: 18px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin-bottom: 4px;
     }
 
     .section ul li::before {
       content: "";
       position: absolute;
       left: 0;
-      top: 9px;
+      top: 8px; /* Adjusted alignment */
       width: 6px;
       height: 6px;
       background: linear-gradient(135deg, #6aa8fa, #1e3a8a);
@@ -166,7 +165,7 @@
       position: relative;
       overflow: hidden;
       border: 1px solid rgba(100,150,255,0.4);
-      padding: 10px 24px;
+      padding: 10px 20px; /* Padding responsif */
       border-radius: 10px;
       color: white;
       transition: 0.3s ease;
@@ -175,6 +174,13 @@
       text-transform: uppercase;
       letter-spacing: 1px;
       box-shadow: 0 0 10px rgba(70,120,255,0.3);
+      white-space: nowrap;
+      font-size: 0.9rem;
+    }
+    
+    /* Media Query untuk tombol di layar besar */
+    @media (min-width: 768px) {
+      .btn-game { padding: 10px 24px; font-size: 1rem; }
     }
 
     .btn-game::after {
@@ -195,99 +201,116 @@
     }
 
     .logo-bg {
-      position: absolute;
+      position: fixed; /* Ubah ke fixed */
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(1.3);
+      transform: translate(-50%, -50%);
       opacity: 0.06;
       pointer-events: none;
-      height: 300px;
       z-index: 0;
+      width: 80vw; /* Responsive width */
+      max-width: 500px;
     }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(6px); }
-    }
-
-    .float { animation: float 4s ease-in-out infinite; }
 
   </style>
 </head>
 
-<body class="flex flex-col items-center justify-center min-h-screen relative p-6 select-none">
+<body class="flex flex-col items-center justify-center min-h-screen p-4 md:p-6 overflow-x-hidden">
 
   <img src="{{ asset('images/war.png') }}" alt="Logo" class="logo-bg">
   <canvas id="particles"></canvas>
 
-  <div class="relative z-10 flex flex-col items-center w-full max-w-7xl mx-auto">
+  <div class="relative z-10 flex flex-col items-center w-full max-w-[1400px] mx-auto h-full">
 
-    <div class="text-center mb-6">
-      <h1 class="text-4xl font-bold text-glow mb-2">LEVEL {{ $id }}</h1>
+    <div class="text-center mb-6 mt-4 md:mt-0">
+      <h1 class="text-3xl md:text-5xl font-bold text-glow mb-2">LEVEL {{ $id }}</h1>
     </div>
 
-    <div class="flex justify-center gap-6 mb-6 z-10">
-      <a href="{{ url('/level') }}" class="btn-game">⬅ Kembali</a>
-      <a href="{{ route('level.start', $id) }}" class="btn-game">Mulai Soal 🚀</a>
+    <div class="flex flex-row justify-center gap-4 mb-6 z-10 w-full max-w-md">
+      <a href="{{ url('/level') }}" class="btn-game flex-1 text-center">⬅ Kembali</a>
+      <a href="{{ route('level.start', $id) }}" class="btn-game flex-1 text-center">Mulai Soal 🚀</a>
     </div>
 
     @php
         $firstKisi = $kisiList->first();
     @endphp
-    <div class="summary mb-6 bg-white/10 p-4 rounded-lg text-center shadow-lg w-full max-w-lg">
-        <p class="text-gray-300 text-lg">
-            🧩 <strong>Jumlah Soal:</strong> {{ $firstKisi->jumlah_soal ?? '-' }}
-        </p>
-        <p class="text-gray-300 text-lg">
-            ⏱️ <strong>Waktu:</strong> {{ $firstKisi->waktu_menit ?? '-' }} menit
-        </p>
+    
+    <div class="summary mb-6 bg-white/10 p-4 rounded-lg text-center shadow-lg w-full max-w-lg border border-white/10 backdrop-blur-sm">
+        <div class="flex justify-around items-center">
+          <p class="text-gray-300 text-sm md:text-lg flex flex-col md:flex-row items-center gap-1">
+             <span>🧩</span> <strong>{{ $firstKisi->jumlah_soal ?? '-' }} Soal</strong>
+          </p>
+          <div class="h-8 w-[1px] bg-gray-500/50"></div>
+          <p class="text-gray-300 text-sm md:text-lg flex flex-col md:flex-row items-center gap-1">
+             <span>⏱️</span> <strong>{{ $firstKisi->waktu_menit ?? '-' }} Menit</strong>
+          </p>
+        </div>
     </div>
 
-    <p class="text-gray-300 text-lg mb-6">Kisi-kisi pertanyaan yang akan kamu hadapi:</p>
+    <p class="text-gray-300 text-base md:text-lg mb-4 text-center px-2">
+      Kisi-kisi pertanyaan yang akan kamu hadapi:
+    </p>
 
-    <div class="kisi-container grid grid-cols-5 gap-4 overflow-y-auto max-h-[500px] p-4 w-full">
-      @if($kisiList->isNotEmpty())
-          @foreach ($kisiList as $item)
-              @php
-                  $topikData = json_decode($item->topik ?? '[]', true);
-              @endphp
+    <div class="kisi-container w-full p-4 md:p-6">
+        
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-y-auto max-h-[65vh] pr-2 custom-scrollbar">
+          @if($kisiList->isNotEmpty())
+              @foreach ($kisiList as $item)
+                  @php
+                      $topikData = json_decode($item->topik ?? '[]', true);
+                  @endphp
 
-              @if(!empty($topikData))
-                  @foreach ($topikData as $topik)
-                      <div class="section bg-white/5 p-4 rounded-lg shadow-lg">
-                        <h3 class="section-title text-base font-semibold mb-2">
-                              {{ $topik['nama'] ?? 'Topik Tidak Diketahui' }}
-                          </h3>
+                  @if(!empty($topikData))
+                      @foreach ($topikData as $topik)
+                          <div class="section h-full flex flex-col">
+                            <h3 class="section-title">
+                                  {{ $topik['nama'] ?? 'Topik Tidak Diketahui' }}
+                              </h3>
 
-                          @if(!empty($topik['submateri']))
-                              <ul class="list-disc text-sm list-inside">
-                                  @foreach($topik['submateri'] as $sub)
-                                      <li>{{ $sub }}</li>
-                                  @endforeach
-                              </ul>
-                          @endif
-                      </div>
-                  @endforeach
-              @endif
-          @endforeach
-      @else
-          <p class="text-center text-gray-400 col-span-5">
-            Belum ada kisi-kisi untuk level ini.
-          </p>
-      @endif
-      
+                              @if(!empty($topik['submateri']))
+                                  <ul class="list-disc list-inside flex-grow">
+                                      @foreach($topik['submateri'] as $sub)
+                                          <li>{{ $sub }}</li>
+                                      @endforeach
+                                  </ul>
+                              @endif
+                          </div>
+                      @endforeach
+                  @endif
+              @endforeach
+          @else
+              <div class="col-span-full flex items-center justify-center h-32">
+                 <p class="text-center text-gray-400">
+                   Belum ada kisi-kisi untuk level ini.
+                 </p>
+              </div>
+          @endif
       </div>
+      
+    </div>
 
-  </div> <script>
+  </div> 
+  
+  <script>
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
-    canvas.width = innerWidth;
-    canvas.height = innerHeight;
+    
+    // Fungsi resize agar canvas mengikuti ukuran layar saat rotasi/resize
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas(); // Panggil saat awal
 
-    const particles = Array.from({ length: 90 }, () => ({
+    // Sesuaikan jumlah partikel berdasarkan ukuran layar
+    const isMobile = window.innerWidth < 768;
+    const particleCount = isMobile ? 40 : 90;
+
+    const particles = Array.from({ length: particleCount }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      size: Math.random() * 2.2,
+      size: Math.random() * (isMobile ? 1.5 : 2.2),
       speedX: (Math.random() - 0.5) * 0.5,
       speedY: (Math.random() - 0.5) * 0.5,
     }));
@@ -301,8 +324,12 @@
         ctx.fill();
         p.x += p.speedX;
         p.y += p.speedY;
-        if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+        
+        // Wrap around screen
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
       });
       requestAnimationFrame(drawParticles);
     }

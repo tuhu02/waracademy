@@ -5,256 +5,40 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Menu Utama (Siswa) | WarAcademy</title>
+  
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Black+Ops+One&display=swap" rel="stylesheet">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
   <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { 
-                        poppins: ['Poppins', 'sans-serif'],
-                        blackops: ['"Black Ops One"', 'sans-serif']
-                    }
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: { 
+                    poppins: ['Poppins', 'sans-serif'],
+                    blackops: ['"Black Ops One"', 'sans-serif']
                 }
             }
         }
+    }
   </script>
+
   <style>
-    /* Goyangan mahkota */
+    /* Animasi Mahkota */
     @keyframes crownBounce {
         0% { transform: translateY(0) rotate(0deg); }
         50% { transform: translateY(-3px) rotate(-8deg); }
         100% { transform: translateY(0) rotate(0deg); }
     }
 
-    /* Efek glow badge */
+    /* Efek Glow */
     .glow-rank {
         box-shadow: 0 0 12px rgba(255, 255, 255, 0.5),
-                    0 0 20px rgba(255, 255, 255, 0.3);
+                   0 0 20px rgba(255, 255, 255, 0.3);
     }
 
-    /* Glossy gradient */
-    .glossy {
-        background: linear-gradient(145deg, rgba(255,255,255,0.35), rgba(255,255,255,0.15));
-        backdrop-filter: blur(4px);
-    }
-</style>
-
-</head>
-
-<body class="font-poppins relative bg-gradient-to-b from-[#0f1b2e] via-[#304863] to-[#3b5875] min-h-screen flex flex-col justify-between p-6 text-white overflow-hidden select-none">
-
-  {{-- Sidebar Hamburger --}}
-  @include('siswa.sidebar')
-
-  <!-- MUSIC BACKGROUND -->
-
-<audio id="bgMusic" loop>
-    <source src="/audio/sound.mp3" type="audio/mpeg">
-</audio>
-  <!-- CANVAS PARTIKEL -->
-  <canvas id="particles" class="absolute inset-0 z-0"></canvas>
-
-  <!-- LOGO LATAR TRANSPARAN -->
-  <img src="/images/war.png" alt="Logo" 
-     style="
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) scale(1.5);
-        height: 300px;
-        opacity: 0.05;
-        pointer-events: none;
-        z-index: 0;
-        mix-blend-mode: lighten;
-     ">
-
-  <!-- HEADER -->
-  <div class="relative w-full text-center animate-fadeInDown z-10">
-    <h1 class="font-blackops text-3xl md:text-4xl font-extrabold bg-gradient-to-b from-[#dce6f2] via-[#a3d3fa] to-[#6aa8fa] bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(70,150,255,0.6)]">
-      Menu Utama
-    </h1>
-
-    <!-- Profile -->
-    <div x-data="{ open: false }" class="absolute right-0 top-0 flex items-center space-x-2">
-      <button @click="open = !open" class="flex items-center space-x-2 focus:outline-none">
-        <span class="text-white/90 font-medium">{{ session('pengguna_username') ?? 'Nama' }}</span>
-      <img src="{{ asset('avatars/' . ($user->avatar_url ?? 'cat.png')) }}" 
-          alt="Avatar" class="w-8 h-8 border-2 border-[#6aa8fa] rounded-full bg-white/20 shadow-sm backdrop-blur-sm">
-      </button>
-
-      <!-- Dropdown -->
-      <div x-show="open" @click.away="open = false"
-          x-transition
-          class="absolute right-0 mt-12 w-40 bg-white/90 border border-gray-200 rounded-lg shadow-lg py-2 text-sm z-20">
-          <form method="POST" action="{{ route('logout') }}">
-              @csrf
-              <button type="submit" 
-                  class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">
-                  Logout
-              </button>
-          </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- MAIN SECTION -->
-  <div class="flex-1 relative flex justify-center items-center z-10">
-    <div class="absolute top-0 left-0 mt-6 ml-6 text-center animate-slideInLeft delay-200">
-      <div class="border border-[#6aa8fa]/60 rounded-xl w-56 p-4 
-          bg-white/10 backdrop-blur-md shadow-lg animate-fadeIn">
-
-          <h2 class="font-semibold text-[#cfe4ff] mb-3 text-center tracking-wide">
-              TOP 5 PLAYER
-          </h2>
-
-          @forelse ($topPlayers as $rank => $p)
-              <div class="flex items-center gap-3 mb-2 
-                          bg-white/5 border border-white/10 rounded-lg px-3 py-2 
-                          hover:bg-white/10 transition-all">
-
-                  {{-- Ranking Badge --}}
-                  <div class="
-                      relative w-9 h-9 flex items-center justify-center font-bold text-sm rounded-xl glossy
-                      @if ($rank == 0) bg-yellow-400 text-black glow-rank
-                      @elseif ($rank == 1) bg-gray-200 text-black glow-rank
-                      @elseif ($rank == 2) bg-orange-600 text-white glow-rank
-                      @else bg-[#6aa8fa]/20 text-white
-                      @endif
-                  ">
-                      {{ $rank + 1 }}
-
-                      {{-- Animated Crown for Rank 1-3 --}}
-                      @if ($rank <= 2)
-                          <span class="absolute -top-3 text-sm"
-                                style="animation: crownBounce 2s infinite;">
-                              👑
-                          </span>
-                      @endif
-                  </div>
-
-                  {{-- Username --}}
-                  <span class="text-blue-100 text-sm font-medium">
-                      {{ $p->username }}
-                  </span>
-
-                  {{-- EXP --}}
-                  <span class="ml-auto text-xs text-blue-200">
-                      {{ $p->total_exp }} EXP
-                  </span>
-
-              </div>
-          @empty
-              <p class="text-blue-200 text-sm text-center">Belum ada data</p>
-          @endforelse
-      </div>
-    </div>
-
-    <div class="flex items-center space-x-12">
-      <div class="relative animate-slideInRight delay-300 group" style="width: 240px; height: 240px;">
-          <a href="{{ route('level') }}" class="w-full h-full flex flex-col items-center justify-center text-2xl font-semibold 
-                      bg-white/10 border border-[#6aa8fa]/60 rounded-xl backdrop-blur-md
-                      shadow-lg hover:shadow-[0_0_25px_rgba(70,150,255,0.4)] hover:bg-white/20
-                      transition-all duration-300 transform group-hover:scale-105">
-              <span class="text-6xl mb-3 drop-shadow-lg">🚀</span>
-              <span>Level</span>
-          </a>
-      </div>
-
-      <div class="relative animate-slideInRight delay-400 group" style="width: 240px; height: 240px;">
-          <a href="{{ route('tournament') }}" class="w-full h-full flex flex-col items-center justify-center text-2xl font-semibold 
-                      bg-white/10 border border-[#6aa8fa]/60 rounded-xl backdrop-blur-md
-                      shadow-lg hover:shadow-[0_0_25px_rgba(70,150,255,0.4)] hover:bg-white/20
-                      transition-all duration-300 transform group-hover:scale-105">
-              <span class="text-6xl mb-3 drop-shadow-lg">🏆</span>
-              <span>Tournament</span>
-          </a>
-      </div>
-    </div>
-  </div>
-
-  <!-- FOOTER BUTTONS -->
-  <div class="flex justify-between items-end animate-slideInUp delay-500 z-10 relative" 
-       x-data="{ showSetting: false, volume: 0.5, muted: false }" 
-       x-init="
-          const savedVol = localStorage.getItem('volume');
-          const savedMute = localStorage.getItem('muted');
-          if(savedVol) volume = parseFloat(savedVol);
-          if(savedMute) muted = savedMute === 'true';
-          const audio = document.getElementById('bgMusic');
-          audio.volume = volume;
-          if(!muted) audio.play();
-       ">
-
-    <!-- SETTING BUTTON -->
-    <div class="relative">
-      <button @click="showSetting = !showSetting" 
-              class="flex items-center gap-2 bg-white/10 border border-[#6aa8fa]/40 rounded-xl px-4 py-2 text-white font-medium shadow-md hover:bg-white/20 backdrop-blur-sm transition transform hover:scale-105">
-        ⚙️ Setting
-      </button>
-
-      <!-- DROPDOWN -->
-      <div x-show="showSetting" 
-           @click.away="showSetting = false"
-           x-transition:enter="transition ease-out duration-300"
-           x-transition:enter-start="opacity-0 translate-y-3 scale-95"
-           x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-           x-transition:leave="transition ease-in duration-200"
-           x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-           x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-           class="absolute bottom-full mb-4 left-0 w-72 bg-white/95 text-gray-800 rounded-2xl shadow-2xl border border-gray-300/70 
-                  p-5 text-sm backdrop-blur-xl z-30 origin-bottom-left">
-
-          <h3 class="font-semibold text-gray-700 mb-2">🎵 Pengaturan Suara</h3>
-          
-          <!-- Toggle Musik -->
-          <div class="flex justify-between items-center mb-3">
-            <span>Musik</span>
-            <button @click="
-                muted = !muted;
-                const audio = document.getElementById('bgMusic');
-                if(muted){ audio.pause(); } else { audio.play(); }
-                localStorage.setItem('muted', muted);
-             "
-             class="px-3 py-1 rounded-md font-semibold transition"
-             :class="muted ? 'bg-red-500 text-white' : 'bg-green-500 text-white'">
-              <span x-text="muted ? 'Mati' : 'Hidup'"></span>
-            </button>
-          </div>
-
-          <!-- Slider Volume -->
-          <label class="block mb-1 text-gray-700 font-medium">Volume</label>
-          <input type="range" min="0" max="1" step="0.01" x-model="volume"
-                 @input="
-                    const audio = document.getElementById('bgMusic');
-                    audio.volume = volume;
-                    localStorage.setItem('volume', volume);
-                 "
-                 class="w-full accent-blue-600 cursor-pointer">
-      </div>
-    </div>
-
-    <!-- TOP 100 -->
-    <a href="{{ route('leaderboard.top100') }}">
-        <button class="relative bg-gradient-to-b from-[#2f5fa8] to-[#0c2957] text-white px-6 py-2 rounded-xl font-semibold 
-                      border border-[#1b3e75]
-                      shadow-[0_4px_10px_rgba(0,0,30,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)]
-                      hover:scale-105 hover:shadow-[0_0_20px_rgba(70,150,255,0.7)]
-                      transition-all duration-300 ease-in-out overflow-hidden group">
-          <span class="relative z-10">🏆 Top 100</span>
-          <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent 
-                        translate-x-[-100%] group-hover:translate-x-[100%] 
-                        transition-transform duration-700"></span>
-        </button>
-    </a>
-  </div>
-
-  <!-- Cahaya kecil -->
-  <div class="absolute right-8 bottom-6 w-4 h-4 rounded-full bg-white/80 blur-[2px] shadow-[0_0_25px_rgba(255,255,255,0.6)] animate-pulseLight"></div>
-
-  <!-- STYLE ANIMASI -->
-  <style>
+    /* Animasi Masuk */
     @keyframes slideInLeft { 0% { opacity: 0; transform: translateX(-40px); } 100% { opacity: 1; transform: translateX(0); } }
     @keyframes slideInRight { 0% { opacity: 0; transform: translateX(40px); } 100% { opacity: 1; transform: translateX(0); } }
     @keyframes slideInUp { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
@@ -274,73 +58,267 @@
     .delay-400 { animation-delay: 0.4s; }
     .delay-500 { animation-delay: 0.5s; }
   </style>
+</head>
 
-  <!-- SCRIPT PARTIKEL -->
+<body class="font-poppins relative bg-gradient-to-b from-[#0f1b2e] via-[#304863] to-[#3b5875] min-h-screen flex flex-col justify-between text-white overflow-x-hidden overflow-y-auto select-none">
+
+  {{-- Sidebar Hamburger --}}
+  @include('siswa.sidebar')
+
+  <audio id="bgMusic" loop>
+    <source src="/audio/sound.mp3" type="audio/mpeg">
+  </audio>
+
+  <canvas id="particles" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+  <img src="/images/war.png" alt="Logo" 
+     style="
+        position: fixed;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%) scale(1.5);
+        height: 300px; opacity: 0.05;
+        pointer-events: none; z-index: 0;
+        mix-blend-mode: lighten;
+     ">
+
+  <div class="relative w-full text-center animate-fadeInDown z-10 pt-6 px-6">
+    <h1 class="font-blackops text-3xl md:text-5xl font-extrabold bg-gradient-to-b from-[#dce6f2] via-[#a3d3fa] to-[#6aa8fa] bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(70,150,255,0.6)]">
+      Menu Utama
+    </h1>
+
+    <div x-data="{ open: false }" class="absolute right-6 top-6 flex items-center">
+      <button @click="open = !open" class="flex items-center gap-2 focus:outline-none">
+        <span class="hidden md:block text-white/90 font-medium text-shadow">{{ session('pengguna_username') ?? 'Siswa' }}</span>
+        <img src="{{ asset('avatars/' . ($user->avatar_url ?? 'cat.png')) }}" 
+             alt="Avatar" class="w-10 h-10 border-2 border-[#6aa8fa] rounded-full bg-white/20 shadow-sm backdrop-blur-sm object-cover">
+      </button>
+
+      <div x-show="open" @click.away="open = false"
+           x-transition
+           class="absolute right-0 mt-12 w-48 bg-white/90 border border-gray-200 rounded-lg shadow-lg py-2 text-sm z-50 text-gray-800">
+          <div class="px-4 py-2 border-b border-gray-200 md:hidden font-bold text-blue-600">
+             {{ session('pengguna_username') ?? 'Siswa' }}
+          </div>
+          <form method="POST" action="{{ route('logout') }}">
+              @csrf
+              <button type="submit" 
+                  class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-semibold">
+                  Logout
+              </button>
+          </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 w-full max-w-[1400px] mx-auto z-10 flex items-center py-8 px-6">
+    
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 w-full items-center">
+
+        <div class="md:col-span-3 order-2 md:order-1 animate-slideInLeft delay-200 flex justify-center md:justify-start">
+            <div class="border border-[#6aa8fa]/60 rounded-xl w-full max-w-[320px] p-4 
+                bg-[#0f1b2e]/40 backdrop-blur-md shadow-lg animate-fadeIn">
+
+                <h2 class="font-blackops text-[#cfe4ff] mb-4 text-center tracking-wider text-lg border-b border-white/10 pb-2">
+                    🏆 TOP 5 AGENTS
+                </h2>
+
+                <div class="flex flex-col gap-3">
+                    @forelse ($topPlayers as $rank => $p)
+                        <div class="flex items-center gap-3 
+                                    bg-[#0f1b2e]/60 border border-[#6aa8fa]/30 rounded-xl p-2 
+                                    hover:bg-[#0f1b2e]/80 transition-all group">
+                            
+                            <div class="relative flex-none w-10 h-10 flex items-center justify-center font-black text-lg rounded-lg shadow-md
+                                @if ($rank == 0) bg-gradient-to-br from-yellow-300 to-yellow-600 text-black ring-1 ring-yellow-200/50
+                                @elseif ($rank == 1) bg-gradient-to-br from-slate-200 to-slate-400 text-slate-900 ring-1 ring-slate-300/50
+                                @elseif ($rank == 2) bg-gradient-to-br from-orange-400 to-orange-700 text-white ring-1 ring-orange-300/50
+                                @else bg-white/10 text-gray-300 border border-white/10
+                                @endif">
+                                <span class="z-10 leading-none pt-[2px]">{{ $rank + 1 }}</span>
+                                @if ($rank <= 2)
+                                    <span class="absolute -top-3 -right-2 text-xl drop-shadow-md" style="animation: crownBounce 3s infinite ease-in-out;">👑</span>
+                                @endif
+                            </div>
+
+                            <div class="flex flex-col justify-center w-full overflow-hidden">
+                                <span class="text-white font-bold text-sm truncate tracking-wide group-hover:text-[#6aa8fa] transition-colors">
+                                    {{ $p->username }}
+                                </span>
+                                <span class="text-[10px] text-blue-300/80 font-mono uppercase tracking-wider">
+                                    {{ $p->total_exp }} XP
+                                </span>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-blue-200 text-sm text-center py-4 italic opacity-70">
+                            Belum ada data agent.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <div class="md:col-span-6 order-1 md:order-2 flex flex-col md:flex-row gap-6 justify-center items-center w-full">
+             <div class="relative animate-slideInRight delay-300 group w-full max-w-sm md:w-64 md:h-64 h-32">
+                <a href="{{ route('level') }}" class="w-full h-full flex flex-row md:flex-col items-center justify-center gap-6 md:gap-4 text-xl md:text-2xl font-semibold 
+                            bg-white/5 border border-[#6aa8fa]/50 rounded-2xl backdrop-blur-sm
+                            shadow-[0_0_15px_rgba(0,0,0,0.3)] hover:shadow-[0_0_30px_rgba(106,168,250,0.5)] hover:bg-white/10 hover:border-[#6aa8fa]
+                            transition-all duration-300 transform group-hover:-translate-y-2">
+                    <span class="text-5xl md:text-7xl drop-shadow-xl transition-transform group-hover:scale-110 duration-300">🚀</span>
+                    <span class="tracking-wider text-shadow-md">Level</span>
+                </a>
+            </div>
+
+            <div class="relative animate-slideInRight delay-400 group w-full max-w-sm md:w-64 md:h-64 h-32">
+                <a href="{{ route('tournament') }}" class="w-full h-full flex flex-row md:flex-col items-center justify-center gap-6 md:gap-4 text-xl md:text-2xl font-semibold 
+                            bg-white/5 border border-[#6aa8fa]/50 rounded-2xl backdrop-blur-sm
+                            shadow-[0_0_15px_rgba(0,0,0,0.3)] hover:shadow-[0_0_30px_rgba(106,168,250,0.5)] hover:bg-white/10 hover:border-[#6aa8fa]
+                            transition-all duration-300 transform group-hover:-translate-y-2">
+                    <span class="text-5xl md:text-7xl drop-shadow-xl transition-transform group-hover:scale-110 duration-300">🏆</span>
+                    <span class="tracking-wider text-shadow-md">Tournament</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="md:col-span-3 order-3 hidden md:block"></div>
+
+    </div>
+  </div>
+
+  <div class="w-full max-w-[1400px] mx-auto px-6 pb-6 pt-4 flex justify-between items-end animate-slideInUp delay-500 z-20 relative" 
+       x-data="{ showSetting: false, volume: 0.5, muted: false }" 
+       x-init="
+          const savedVol = localStorage.getItem('volume');
+          const savedMute = localStorage.getItem('muted');
+          if(savedVol) volume = parseFloat(savedVol);
+          if(savedMute) muted = savedMute === 'true';
+          const audio = document.getElementById('bgMusic');
+          audio.volume = volume;
+          if(!muted) {
+              const playPromise = audio.play();
+              if (playPromise !== undefined) playPromise.catch(error => {});
+          }
+       ">
+
+    <div class="relative">
+      <button @click="showSetting = !showSetting" 
+              class="flex items-center gap-2 bg-[#0f1b2e]/60 border border-[#6aa8fa]/40 rounded-xl px-4 py-3 text-white font-medium shadow-lg hover:bg-[#1e3a8a]/60 backdrop-blur-md transition transform hover:scale-105 active:scale-95">
+        <span class="text-xl">⚙️</span> <span class="hidden md:inline font-semibold">Setting</span>
+      </button>
+
+      <div x-show="showSetting" 
+           @click.away="showSetting = false"
+           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+           x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+           x-transition:leave="transition ease-in duration-200"
+           class="absolute bottom-full mb-4 left-0 w-72 bg-[#1f2937] text-white rounded-2xl shadow-2xl border border-gray-600 
+                  p-5 text-sm backdrop-blur-xl z-50 origin-bottom-left">
+
+          <h3 class="font-bold text-lg mb-3 border-b border-gray-600 pb-2">🎵 Pengaturan Suara</h3>
+          
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-gray-300">Musik Background</span>
+            <button @click="
+                muted = !muted;
+                const audio = document.getElementById('bgMusic');
+                if(muted){ audio.pause(); } else { audio.play(); }
+                localStorage.setItem('muted', muted);
+             "
+             class="px-3 py-1 rounded-lg font-bold text-xs uppercase tracking-wide transition shadow-md"
+             :class="muted ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'">
+              <span x-text="muted ? 'OFF' : 'ON'"></span>
+            </button>
+          </div>
+
+          <label class="block mb-2 text-gray-300 font-medium text-xs uppercase">Volume Master</label>
+          <input type="range" min="0" max="1" step="0.01" x-model="volume"
+                 @input="
+                    const audio = document.getElementById('bgMusic');
+                    audio.volume = volume;
+                    localStorage.setItem('volume', volume);
+                 "
+                 class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+      </div>
+    </div>
+
+    <a href="{{ route('leaderboard.top100') }}">
+        <button class="relative bg-gradient-to-b from-[#2f5fa8] to-[#0c2957] text-white px-5 py-3 rounded-xl font-bold 
+                      border border-[#4fa3ff]/50 text-sm md:text-base tracking-wide
+                      shadow-[0_0_15px_rgba(0,0,0,0.5)]
+                      hover:scale-105 hover:shadow-[0_0_25px_rgba(70,150,255,0.7)] hover:border-[#4fa3ff]
+                      transition-all duration-300 overflow-hidden group">
+          <span class="relative z-10 flex items-center gap-2">
+              <span>🏆</span> Top 100
+          </span>
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
+                        translate-x-[-150%] group-hover:translate-x-[150%] 
+                        transition-transform duration-700 ease-in-out"></div>
+        </button>
+    </a>
+  </div>
+
+  <div class="fixed right-10 bottom-10 w-32 h-32 rounded-full bg-blue-500/20 blur-[80px] pointer-events-none z-0"></div>
+
   <script>
     const audio = document.getElementById('bgMusic');
 
-    // Fungsi fade out
-    function fadeOutAudio(audio, duration, callback) {
-      const step = 50; 
-      const fadeAmount = audio.volume / (duration / step);
-      const fadeInterval = setInterval(() => {
-        if (audio.volume - fadeAmount > 0) {
-          audio.volume -= fadeAmount;
-        } else {
-          audio.volume = 0;
-          clearInterval(fadeInterval);
-          audio.pause();
-          if (callback) callback();
-        }
-      }, step);
-    }
-
-    // Tambahkan efek fade-out pada tombol navigasi
+    // Fungsi fade out navigasi halus
     document.querySelectorAll('a[href]').forEach(link => {
       link.addEventListener('click', e => {
         const href = link.getAttribute('href');
-        if (href.startsWith('http') || href.startsWith('#')) return; // skip eksternal
-
-        e.preventDefault(); // hentikan pindah halaman dulu
-        fadeOutAudio(audio, 1500, () => {
-          window.location.href = href; // pindah halaman setelah fade out selesai
-        });
+        if (href.startsWith('http') || href.startsWith('#')) return; 
+        e.preventDefault(); 
+        
+        const step = 0.1;
+        const fadeOut = setInterval(() => {
+            if (audio.volume > 0.1) {
+                audio.volume -= step;
+            } else {
+                clearInterval(fadeOut);
+                window.location.href = href;
+            }
+        }, 50);
       });
     });
 
+    // Canvas Partikel
     const canvas = document.getElementById('particles');
     const ctx = canvas.getContext('2d');
-    canvas.width = innerWidth;
-    canvas.height = innerHeight;
+    
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
     const particles = Array.from({ length: 60 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      size: Math.random() * 2,
-      speedX: (Math.random() - 0.5) * 0.4,
-      speedY: (Math.random() - 0.5) * 0.4,
+      size: Math.random() * 2 + 0.5,
+      speedX: (Math.random() - 0.5) * 0.3,
+      speedY: (Math.random() - 0.5) * 0.3,
+      opacity: Math.random() * 0.5 + 0.2
     }));
 
     function drawParticles() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
       particles.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
         ctx.fill();
         p.x += p.speedX;
         p.y += p.speedY;
-        if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
       });
       requestAnimationFrame(drawParticles);
     }
     drawParticles();
-
-    window.addEventListener('resize', () => {
-      canvas.width = innerWidth;
-      canvas.height = innerHeight;
-    });
   </script>
 </body>
 </html>
