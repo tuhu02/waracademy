@@ -102,11 +102,14 @@
 
                 // Shared data injected from server
                 window.tournamentData = {
+                    tournamentId: {{ $turnamen->id_turnamen }},
                     duration: {{ $turnamen->durasi_pengerjaan }},
                     questions: @json(array_values($questions)),
                     submitQuestionUrl: '{{ route('tournament.submit.question', ['id' => $turnamen->id_turnamen]) }}',
                     submitAllUrl: '{{ route('tournament.submit.all', ['id' => $turnamen->id_turnamen]) }}',
-                    mode: '{{ $turnamen->mode }}'
+                    mode: '{{ $turnamen->mode }}',
+                    endTime: '{{ optional($turnamen->end_time)->toIso8601String() ?? '' }}',
+                    serverTime: '{{ now()->toIso8601String() }}'
                 };
                 console.log("Alpine ready, tournamentData:", window.tournamentData);
 
@@ -175,18 +178,21 @@
                             <div class="mt-6" x-show="mode === 'tim'">
                                 <button
                                     class="btn-nav bg-blue-600 hover:bg-blue-500"
-                                    :disabled="!answers[currentQuestion.id] || submittingQuestion"
+                                    :disabled="!answers[currentQuestion.id] || submittingQuestion || submittedStatus[currentQuestion.id]"
                                     @click="submitSingle(currentQuestion.id)"
                                 >
-                                    <template x-if="!submittingQuestion">
+                                    <template x-if="!submittingQuestion && !submittedStatus[currentQuestion.id]">
                                         <i class="fa-solid fa-paper-plane mr-2"></i> Submit Jawaban (Tim)
                                     </template>
                                     <template x-if="submittingQuestion">
                                         <i class="fa-solid fa-spinner fa-spin mr-2"></i> Mengirim...
                                     </template>
+                                    <template x-if="submittedStatus[currentQuestion.id] && !submittingQuestion">
+                                        <i class="fa-solid fa-check mr-2"></i> Sudah Disubmit
+                                    </template>
                                 </button>
                                 <p class="text-sm text-gray-300 mt-2" x-show="submittedStatus[currentQuestion.id]">
-                                    Status: <span class="text-green-300">Sudah disubmit</span>
+                                    Status: <span class="text-green-300">Sudah disubmit oleh tim</span>
                                 </p>
                             </div>
                         </div>
@@ -287,16 +293,43 @@
                 showModal: false,
                 submittingQuestion: false,
                 submittedStatus: {}, // { question_id: true/false }
+                submittedCount: 0, // Counter to force reactivity
+                isAutoSubmitting: false, // Flag to indicate auto-submit on timeout
 
                 init() {
                     // init submitted status if provided by server later
                     this.questions.forEach(q => { this.submittedStatus[q.id] = false; });
 
+                    // Compute timer based on server-provided endTime when available so refresh doesn't reset timer
+                    try {
+                        if (window.tournamentData && window.tournamentData.endTime) {
+                            const serverTimeMs = Date.parse(window.tournamentData.serverTime);
+                            const endTimeMs = Date.parse(window.tournamentData.endTime);
+                            const nowMs = Date.now();
+
+                            // total remaining (seconds) from the server snapshot, minus seconds elapsed on client since that snapshot
+                            const totalRemainingFromServer = Math.max(0, Math.floor((endTimeMs - serverTimeMs) / 1000));
+                            const elapsedSinceServer = Math.max(0, Math.floor((nowMs - serverTimeMs) / 1000));
+                            const remaining = Math.max(0, totalRemainingFromServer - elapsedSinceServer);
+                            this.timer = remaining;
+                        } else {
+                            this.timer = (this.duration || 0) * 60;
+                        }
+                    } catch (e) {
+                        this.timer = (this.duration || 0) * 60;
+                    }
+
                     // try to start timer automatically
                     this.startTimer();
 
+                    // For mode TIM: start polling team submission status every 2 seconds
+                    if (this.mode === 'tim' && window.tournamentData) {
+                        this.startPollingTeamStatus();
+                        this.startPollingTeamFinish();
+                    }
+
                     // expose for debug if needed
-                    console.log('quizController init', { duration: this.duration, mode: this.mode, totalQ: this.questions.length });
+                    console.log('quizController init', { duration: this.duration, mode: this.mode, totalQ: this.questions.length, timer: this.timer });
                 },
 
                 get currentQuestion() {
@@ -345,6 +378,12 @@
                         return;
                     }
 
+                    // Jangan kirim ulang jika sudah disubmit
+                    if (this.submittedStatus[questionId]) {
+                        console.log('Question already submitted:', questionId);
+                        return;
+                    }
+
                     this.submittingQuestion = true;
 
                     try {
@@ -375,6 +414,7 @@
                         // assume server replied success
                         this.submittingQuestion = false;
                         this.submittedStatus[questionId] = true;
+                        this.submittedCount++; // Force reactivity update
                         // optional: show toast / visual feedback
                         console.log('Submitted single question', questionId);
 
@@ -385,13 +425,104 @@
                     }
                 },
 
-                async submitAll() {
+                startPollingTeamStatus() {
+                    // Poll server every 2 seconds to get submitted questions for entire team
+                    // This ensures all team members see the same submitted status
+                    const that = this;
+                    if (this._pollingInterval) clearInterval(this._pollingInterval);
+
+                    this._pollingInterval = setInterval(() => {
+                        // Extract tournament ID from URL path: /tournament/start/{id}
+                        const pathParts = window.location.pathname.split('/').filter(p => p);
+                        // pathParts = ['tournament', 'start', '{id}']
+                        const tournamentId = pathParts[pathParts.length - 1];
+                        
+                        if (!tournamentId) {
+                            console.warn('Could not extract tournament ID from URL');
+                            return;
+                        }
+
+                        fetch(`/tournament/${tournamentId}/team-submission-status`, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data && Array.isArray(data.submitted_ids)) {
+                                // Update submitted status for all submitted questions
+                                let hasChanges = false;
+                                data.submitted_ids.forEach(qid => {
+                                    if (!that.submittedStatus[qid]) {
+                                        that.submittedStatus[qid] = true;
+                                        hasChanges = true;
+                                    }
+                                });
+                                
+                                // Force Alpine to update UI if there are changes
+                                if (hasChanges) {
+                                    // Increment counter to trigger Alpine reactivity
+                                    that.submittedCount++;
+                                    console.log('Team submission status updated:', data.submitted_ids, 'Count:', that.submittedCount);
+                                }
+                            }
+                        })
+                        .catch(err => console.warn('Team status polling error:', err));
+                    }, 2000); // Poll every 2 seconds
+                },
+
+                startPollingTeamFinish() {
+                    // Poll server every 2 seconds to check if team has finished
+                    // When ANY team member submits all, redirect all members to leaderboard
+                    const that = this;
+                    if (this._finishPollingInterval) clearInterval(this._finishPollingInterval);
+
+                    this._finishPollingInterval = setInterval(() => {
+                        // Extract tournament ID from URL path: /tournament/start/{id}
+                        const pathParts = window.location.pathname.split('/').filter(p => p);
+                        const tournamentId = pathParts[pathParts.length - 1];
+                        
+                        if (!tournamentId) {
+                            console.warn('Could not extract tournament ID from URL');
+                            return;
+                        }
+
+                        fetch(`/tournament/${tournamentId}/team-finish-status`, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            // If team has finished (one member submitted), redirect all to leaderboard
+                            if (data && data.finished && data.team_finished) {
+                                console.log('Team has finished, redirecting to leaderboard...');
+                                clearInterval(that._finishPollingInterval);
+                                // Redirect to leaderboard with tournament ID
+                                window.location.href = `/tournament/leaderboard/${tournamentId}`;
+                            }
+                        })
+                        .catch(err => console.warn('Team finish polling error:', err));
+                    }, 2000); // Poll every 2 seconds
+                },
+
+                async submitAll(isAutoSubmit = false) {
                     // Submit semua jawaban yang ada (untuk mode tim jika ingin submit final),
                     // atau bisa dipakai sebagai convenience: kirim semua yang sudah terpilih.
                     const answersToSend = this.answers;
 
-                    if (Object.keys(answersToSend).length === 0) {
-                        if (!confirm('Belum ada jawaban. Tetap kirim kosong?')) return;
+                    // Show confirmation alert if manually triggered (not auto-submit on timeout)
+                    if (!isAutoSubmit) {
+                        if (!confirm('Apakah yakin submit all?')) return;
+                    }
+
+                    // Mark as auto-submitting to prevent user interaction during timeout
+                    if (isAutoSubmit) {
+                        this.isAutoSubmitting = true;
                     }
 
                     try {
@@ -413,7 +544,10 @@
 
                         if (!res.ok) {
                             const err = await res.json().catch(()=>({ message: 'Unknown error' }));
-                            alert('Gagal submit all: ' + (err.message || res.statusText));
+                            if (!isAutoSubmit) {
+                                alert('Gagal submit all: ' + (err.message || res.statusText));
+                            }
+                            console.error('submitAll error:', err);
                             return;
                         }
 
@@ -423,24 +557,37 @@
                         // Mark all sent questions as submitted (best-effort)
                         Object.keys(this.answers).forEach(qid => this.submittedStatus[qid] = true);
 
-                        // If backend returns a redirect URL:
-                        if (data && data.redirect_url) {
-                            window.location.href = data.redirect_url;
-                            return;
-                        }
-
-                        alert('Semua jawaban berhasil dikirim.');
+                        // Extract tournament ID from current URL or use data if provided
+                        const tournamentId = this.extractTournamentId();
+                        
+                        // Redirect to leaderboard with tournament ID
+                        window.location.href = `/tournament/leaderboard/${tournamentId}`;
                     } catch (e) {
                         console.error('submitAll error', e);
-                        alert('Gagal mengirim semua jawaban.');
+                        if (!isAutoSubmit) {
+                            alert('Gagal mengirim semua jawaban.');
+                        }
                     }
+                },
+
+                extractTournamentId() {
+                    // First try to get from window.tournamentData if available
+                    if (window.tournamentData && window.tournamentData.tournamentId) {
+                        return window.tournamentData.tournamentId;
+                    }
+                    // Fallback: Extract tournament ID from URL /tournament/start/{id}
+                    const pathParts = window.location.pathname.split('/').filter(p => p);
+                    if (pathParts.length >= 3 && pathParts[1] === 'start') {
+                        return pathParts[2];
+                    }
+                    return 'leaderboard'; // Fallback URL
                 },
 
                 async submitQuiz() {
                     // Mode individu: kirim seluruh jawaban seperti sebelumnya
                     if (this.mode === 'tim') {
                         // Jika mode tim, gunakan submitAll agar konsisten, atau biarkan user memilih submit per-soal
-                        return this.submitAll();
+                        return this.submitAll(true);  // Pass true to indicate this is auto-submit on timeout
                     }
 
                     try {

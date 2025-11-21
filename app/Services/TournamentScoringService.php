@@ -80,34 +80,29 @@ class TournamentScoringService
             // jika tidak ada anggota, fallback ke 0
             return 0.0;
         }
+        // Pertama: coba ambil row peserta yang mewakili tim (biasanya dibuat saat startTournament)
+        $part = DB::table('pesertaturnamen')
+            ->where('id_turnamen', $id_turnamen)
+            ->where('id_tim', $id_tim)
+            ->first();
 
-        // mapping: temukan id_peserta di pesertaturnamen untuk tim ini
-        $part = DB::table('pesertaturnamen')->where('id_turnamen', $id_turnamen)->where('id_tim', $id_tim)->first();
-        if (!$part) {
-            return 0.0;
+        if ($part && isset($part->id_peserta)) {
+            // Jika ada peserta yang mewakili tim, hitung skor berdasarkan jawaban pada peserta tersebut
+            return self::calculateParticipantScore((int)$part->id_peserta, $id_turnamen);
         }
-        $id_peserta = $part->id_peserta;
 
-        // hitung skor tim berdasarkan jawaban yang tersimpan untuk id_peserta
-        // jika Anda menyimpan jawaban per-user (menggunakan id_pengguna), Anda bisa hitung skor per anggota lalu rata-rata.
-        // Di sini kita asumsikan setiap anggota menjawab sebagai dirinya sendiri dan jawaban disimpan di turnamen_jawaban_peserta dengan kolom id_pengguna
+        // Jika tidak ada peserta tim (mis. struktur menyimpan jawaban per-user), fallback: hitung rata-rata skor peserta per anggota
         $scores = [];
         foreach ($anggota as $u) {
-            // cari jawaban yang berkaitan dengan pengguna (jika tabel menyimpan id_pengguna)
-            $agg = DB::table('turnamen_jawaban_peserta')
+            // cari pesertaturnamen untuk setiap anggota (id_pengguna)
+            $p = DB::table('pesertaturnamen')
+                ->where('id_turnamen', $id_turnamen)
                 ->where('id_pengguna', $u)
-                ->selectRaw('COUNT(*) as answered, SUM(is_correct) as correct, MAX(answered_at) as last_answered')
                 ->first();
-            if (!$agg) continue;
-            $answered = (int) ($agg->answered ?? 0);
-            $correct = (int) ($agg->correct ?? 0);
 
-            // hitung skor anggota (pakai base + accuracy, speed ambiguous)
-            $base = $correct * 10;
-            $acc = ($answered>0) ? ($correct/$answered)*20 : 0;
-            // speed per anggota agak sulit -> skip or estimate
-            $s = $base + $acc;
-            $scores[] = $s;
+            if ($p && isset($p->id_peserta)) {
+                $scores[] = self::calculateParticipantScore((int)$p->id_peserta, $id_turnamen);
+            }
         }
 
         if (empty($scores)) return 0.0;

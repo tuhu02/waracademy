@@ -53,11 +53,11 @@ Route::get('/home', function () {
             'pengguna.id_pengguna',
             'pengguna.username',
             'pengguna.avatar_url',
-            DB::raw('
-                COALESCE(pengguna.total_exp, 0) +
-                COALESCE(SUM(progreslevelpengguna.exp), 0) +
-                COALESCE(SUM(riwayatpertandingan.exp_didapat), 0)
-            AS total_exp')
+                DB::raw('
+                    COALESCE(MAX(pengguna.total_exp), 0) +
+                    COALESCE(SUM(progreslevelpengguna.exp), 0) +
+                    COALESCE(SUM(riwayatpertandingan.exp_didapat), 0)
+                AS total_exp')
         )
         ->groupBy('pengguna.id_pengguna', 'pengguna.username', 'pengguna.avatar_url')
         ->orderByDesc('total_exp')
@@ -130,6 +130,10 @@ Route::post('/tournament/{id}/submit-question', [SiswaTournamentController::clas
 Route::post('/tournament/{id}/submit-all', [SiswaTournamentController::class, 'submitAll'])
     ->name('tournament.submit.all');
 
+/* POLLING TEAM SUBMISSION STATUS */
+Route::get('/tournament/{id}/team-submission-status', [SiswaTournamentController::class, 'teamSubmissionStatus'])
+    ->name('tournament.team.submission.status');
+
 /* FINISH (SOL0 / TIM) */
 Route::post('/tournament/finish/{idPeserta}', [SiswaTournamentController::class, 'finishTournament'])
     ->name('tournament.finish');
@@ -140,6 +144,10 @@ Route::get('/tournament/leaderboard/{id}', [SiswaTournamentController::class, 'l
 
 Route::get('/tournament/leaderboard/{id}/status', [SiswaTournamentController::class, 'leaderboardStatus'])
     ->name('tournament.leaderboard.status');
+
+/* TEAM FINISH STATUS - for polling when one member submits */
+Route::get('/tournament/{id}/team-finish-status', [SiswaTournamentController::class, 'teamFinishStatus'])
+    ->name('tournament.team-finish-status');
 
 
 /*

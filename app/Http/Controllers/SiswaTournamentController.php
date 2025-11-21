@@ -391,18 +391,37 @@ class SiswaTournamentController extends Controller
         $answeredCount = $userAnswers->count();
         $wrongCount = $answeredCount - $correctCount;
 
-        // Ambil leaderboard (semua peserta)
-        $leaderboardRaw = DB::table('pesertaturnamen')
-            ->leftJoin('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
-            ->where('pesertaturnamen.id_turnamen', $id)
-            ->select(
-                'pesertaturnamen.*',
-                'pengguna.username as nama',
-                'pengguna.avatar_url'
-            )
-            ->orderBy('pesertaturnamen.skor_akhir', 'desc')
-            ->orderBy('pesertaturnamen.updated_at', 'asc') // Yang selesai lebih dulu ranking lebih tinggi jika skor sama
-            ->get();
+        // Mode TIM: Ambil leaderboard per tim dari tim_turnamen
+        if ($turnamen->mode === 'tim') {
+            $leaderboardRaw = DB::table('pesertaturnamen')
+                ->join('tim_turnamen', function($join) use ($id) {
+                    $join->on('pesertaturnamen.id_tim', '=', 'tim_turnamen.id_tim')
+                         ->where('tim_turnamen.id_turnamen', '=', $id);
+                })
+                ->where('pesertaturnamen.id_turnamen', $id)
+                ->where('pesertaturnamen.id_pengguna', null)  // Hanya ambil peserta tim (bukan individual)
+                ->select(
+                    'pesertaturnamen.*',
+                    'tim_turnamen.nama_tim as nama',
+                    DB::raw("NULL as avatar_url")
+                )
+                ->orderBy('pesertaturnamen.skor_akhir', 'desc')
+                ->orderBy('pesertaturnamen.updated_at', 'asc')
+                ->get();
+        } else {
+            // Mode SOLO: Ambil leaderboard per individu
+            $leaderboardRaw = DB::table('pesertaturnamen')
+                ->leftJoin('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
+                ->where('pesertaturnamen.id_turnamen', $id)
+                ->select(
+                    'pesertaturnamen.*',
+                    'pengguna.username as nama',
+                    'pengguna.avatar_url'
+                )
+                ->orderBy('pesertaturnamen.skor_akhir', 'desc')
+                ->orderBy('pesertaturnamen.updated_at', 'asc')
+                ->get();
+        }
 
         // Hitung peringkat dan siapkan data leaderboard
         $leaderboard = [];
@@ -416,7 +435,6 @@ class SiswaTournamentController extends Controller
             } elseif ($previousScore === null) {
                 $currentRank = 1;
             }
-            // Jika skor sama, tetap gunakan ranking yang sama (tidak increment)
 
             $previousScore = $r->skor_akhir;
 
@@ -428,17 +446,20 @@ class SiswaTournamentController extends Controller
             $participantCorrect = $participantAnswers->where('is_correct', 1)->count();
             $participantAnswered = $participantAnswers->count();
 
+            // Cek apakah ini data user saat ini (untuk solo: id_pengguna; untuk tim: id_tim)
+            $isMe = $turnamen->mode === 'tim' ? ($r->id_tim == $peserta->id_tim) : ($r->id_pengguna == $penggunaId);
+
             $leaderboard[] = [
                 'rank' => $currentRank,
                 'id' => $r->id_peserta,
-                'nama' => $r->nama ?? ('User ' . $r->id_pengguna),
-                'kelas' => '-', // Kolom kelas tidak ada di tabel pengguna, set default
+                'nama' => $r->nama ?? 'Tim Tidak Diketahui',
+                'kelas' => '-',
                 'avatar_url' => $r->avatar_url,
                 'skor' => $r->skor_akhir ?? 0,
                 'correct' => $participantCorrect,
                 'answered' => $participantAnswered,
                 'status' => $r->status ?? 'active',
-                'is_me' => $r->id_pengguna == $penggunaId,
+                'is_me' => $isMe,
             ];
         }
 
@@ -471,18 +492,43 @@ class SiswaTournamentController extends Controller
             return response()->json(['error' => 'Tournament not found'], 404);
         }
 
-        // Ambil leaderboard (semua peserta)
-        $leaderboardRaw = DB::table('pesertaturnamen')
-            ->leftJoin('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
-            ->where('pesertaturnamen.id_turnamen', $id)
-            ->select(
-                'pesertaturnamen.*',
-                'pengguna.username as nama',
-                'pengguna.avatar_url'
-            )
-            ->orderBy('pesertaturnamen.skor_akhir', 'desc')
-            ->orderBy('pesertaturnamen.updated_at', 'asc')
-            ->get();
+        // Ambil peserta untuk user
+        $peserta = DB::table('pesertaturnamen')
+            ->where('id_turnamen', $id)
+            ->where('id_pengguna', $penggunaId)
+            ->first();
+
+        // Mode TIM: Ambil leaderboard per tim dari tim_turnamen
+        if ($turnamen->mode === 'tim') {
+            $leaderboardRaw = DB::table('pesertaturnamen')
+                ->join('tim_turnamen', function($join) use ($id) {
+                    $join->on('pesertaturnamen.id_tim', '=', 'tim_turnamen.id_tim')
+                         ->where('tim_turnamen.id_turnamen', '=', $id);
+                })
+                ->where('pesertaturnamen.id_turnamen', $id)
+                ->where('pesertaturnamen.id_pengguna', null)  // Hanya ambil peserta tim (bukan individual)
+                ->select(
+                    'pesertaturnamen.*',
+                    'tim_turnamen.nama_tim as nama',
+                    DB::raw("NULL as avatar_url")
+                )
+                ->orderBy('pesertaturnamen.skor_akhir', 'desc')
+                ->orderBy('pesertaturnamen.updated_at', 'asc')
+                ->get();
+        } else {
+            // Mode SOLO: Ambil leaderboard per individu
+            $leaderboardRaw = DB::table('pesertaturnamen')
+                ->leftJoin('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
+                ->where('pesertaturnamen.id_turnamen', $id)
+                ->select(
+                    'pesertaturnamen.*',
+                    'pengguna.username as nama',
+                    'pengguna.avatar_url'
+                )
+                ->orderBy('pesertaturnamen.skor_akhir', 'desc')
+                ->orderBy('pesertaturnamen.updated_at', 'asc')
+                ->get();
+        }
 
         // Hitung peringkat dan siapkan data leaderboard
         $leaderboard = [];
@@ -507,25 +553,22 @@ class SiswaTournamentController extends Controller
             $participantCorrect = $participantAnswers->where('is_correct', 1)->count();
             $participantAnswered = $participantAnswers->count();
 
+            // Cek apakah ini data user saat ini (untuk solo: id_pengguna; untuk tim: id_tim)
+            $isMe = $turnamen->mode === 'tim' ? ($r->id_tim == ($peserta->id_tim ?? null)) : ($r->id_pengguna == $penggunaId);
+
             $leaderboard[] = [
                 'rank' => $currentRank,
                 'id' => $r->id_peserta,
-                'nama' => $r->nama ?? ('User ' . $r->id_pengguna),
-                'kelas' => '-', // Kolom kelas tidak ada di tabel pengguna, set default
+                'nama' => $r->nama ?? 'Tim Tidak Diketahui',
+                'kelas' => '-',
                 'avatar_url' => $r->avatar_url,
                 'skor' => $r->skor_akhir ?? 0,
                 'correct' => $participantCorrect,
                 'answered' => $participantAnswered,
                 'status' => $r->status ?? 'active',
-                'is_me' => $r->id_pengguna == $penggunaId,
+                'is_me' => $isMe,
             ];
         }
-
-        // Ambil data user untuk myRank dan myScore
-        $peserta = DB::table('pesertaturnamen')
-            ->where('id_turnamen', $id)
-            ->where('id_pengguna', $penggunaId)
-            ->first();
 
         $myRank = collect($leaderboard)->where('is_me', true)->first()['rank'] ?? null;
         $myScore = $peserta->skor_akhir ?? 0;
@@ -710,15 +753,34 @@ class SiswaTournamentController extends Controller
         }
 
         $questionId = $request->input('question_id');
-        $chosen = $request->input('chosen_option'); // bisa index atau id_jawaban
+        $chosen = $request->input('answer_id') ?? $request->input('chosen_option'); // Frontend sends answer_id
         if (!$questionId) {
             return response()->json(['message' => 'question_id required'], 422);
         }
 
-        // cari tim yang user tergabung
+        // cari tim yang user tergabung (prioritaskan tabel `tim_anggota`)
         $anggota = DB::table('tim_anggota')->where('id_pengguna', $userId)->first();
         if (!$anggota) {
-            return response()->json(['message' => 'Anda belum berada di tim.'], 403);
+            // Fallback: beberapa alur (mis. moveTeam) hanya menyimpan `id_tim` di tabel `pesertaturnamen`.
+            // Periksa participant row untuk mendapatkan `id_tim` jika tersedia.
+            $pFallback = DB::table('pesertaturnamen')
+                ->where('id_turnamen', $id)
+                ->where('id_pengguna', $userId)
+                ->first();
+
+            if ($pFallback && !is_null($pFallback->id_tim)) {
+                // Log fallback untuk debugging/monitoring sinkronisasi data
+                Log::warning('tim_anggota missing; falling back to pesertaturnamen for team id', [
+                    'user_id' => $userId,
+                    'turnamen_id' => $id,
+                    'fallback_id_tim' => $pFallback->id_tim,
+                    'context' => 'submitQuestion'
+                ]);
+                // Buat objek sederhana yang membawa id_tim agar sisa logika tetap bekerja
+                $anggota = (object)[ 'id_tim' => $pFallback->id_tim, 'id_pengguna' => $userId ];
+            } else {
+                return response()->json(['message' => 'Anda belum berada di tim.'], 403);
+            }
         }
 
         // cari peserta (tim) pada turnamen
@@ -762,6 +824,11 @@ class SiswaTournamentController extends Controller
                     'is_correct' => $isCorrect,
                     'answered_at' => $now
                 ]);
+            Log::info('Answer updated', [
+                'id_peserta' => $peserta->id_peserta,
+                'id_pertanyaan' => $questionId,
+                'is_correct' => $isCorrect
+            ]);
         } else {
             // insert jawaban baru
             DB::table('turnamen_jawaban_peserta')->insert([
@@ -770,6 +837,11 @@ class SiswaTournamentController extends Controller
                 'id_jawaban_dipilih' => $chosen,
                 'is_correct' => $isCorrect,
                 'answered_at' => $now
+            ]);
+            Log::info('Answer inserted', [
+                'id_peserta' => $peserta->id_peserta,
+                'id_pertanyaan' => $questionId,
+                'is_correct' => $isCorrect
             ]);
         }
 
@@ -813,6 +885,15 @@ class SiswaTournamentController extends Controller
             DB::table('pesertaturnamen')
                 ->where('id_peserta', $peserta->id_peserta)
                 ->update(['id_tim' => null, 'slot_index' => null]);
+            // Hapus juga entri di `tim_anggota` agar sumber kebenaran tetap konsisten
+            $deleted = DB::table('tim_anggota')->where('id_pengguna', $penggunaId)->delete();
+            if ($deleted) {
+                Log::info('Removed tim_anggota entry when user left team', [
+                    'user_id' => $penggunaId,
+                    'turnamen_kode' => $kode ?? null,
+                    'context' => 'moveTeam.leave'
+                ]);
+            }
             return response()->json(['success' => true, 'message' => 'Keluar dari tim.']);
         }
 
@@ -850,6 +931,26 @@ class SiswaTournamentController extends Controller
                         'id_tim' => $newTeamId,
                         'slot_index' => $newSlotIndex
                     ]);
+
+                // --- Sinkronisasi: pastikan `tim_anggota` mencerminkan perubahan ini ---
+                // Hapus entri lama (jika ada) untuk pengguna ini
+                DB::table('tim_anggota')->where('id_pengguna', $penggunaId)->delete();
+
+                // Masukkan entri baru untuk anggota tim
+                DB::table('tim_anggota')->insert([
+                    'id_tim' => $newTeamId,
+                    'id_pengguna' => $penggunaId,
+                    'slot_index' => $newSlotIndex,
+                    'joined_at' => now()
+                ]);
+
+                Log::info('Synchronized tim_anggota after moveTeam', [
+                    'user_id' => $penggunaId,
+                    'turnamen_id' => $turnamen->id_turnamen ?? null,
+                    'new_team_id' => $newTeamId,
+                    'new_slot_index' => $newSlotIndex,
+                    'context' => 'moveTeam.update'
+                ]);
             });
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 409); // 409 = Conflict
@@ -943,13 +1044,31 @@ class SiswaTournamentController extends Controller
 
         // temukan tim dan peserta
         $anggota = DB::table('tim_anggota')->where('id_pengguna', $userId)->first();
-        if (!$anggota) return response()->json(['message' => 'Anda belum berada di tim.'], 403);
+        if (!$anggota) {
+            // fallback: periksa pesertaturnamen untuk id_tim yang mungkin disimpan langsung di participant
+            $pFallback = DB::table('pesertaturnamen')
+                ->where('id_turnamen', $id)
+                ->where('id_pengguna', $userId)
+                ->first();
+
+            if ($pFallback && !is_null($pFallback->id_tim)) {
+                Log::warning('tim_anggota missing; falling back to pesertaturnamen for team id', [
+                    'user_id' => $userId,
+                    'turnamen_id' => $id,
+                    'fallback_id_tim' => $pFallback->id_tim,
+                    'context' => 'submitAll'
+                ]);
+                $anggota = (object)[ 'id_tim' => $pFallback->id_tim, 'id_pengguna' => $userId ];
+            } else {
+                return response()->json(['message' => 'Anda belum berada di tim.'], 403);
+            }
+        }
 
         $peserta = DB::table('pesertaturnamen')
             ->where('id_turnamen', $id)
             ->where('id_tim', $anggota->id_tim)
             ->first();
-        dd($peserta);
+
         if (!$peserta) return response()->json(['message' => 'Peserta tim tidak ditemukan.'], 404);
 
         $now = Carbon::now();
@@ -972,6 +1091,113 @@ class SiswaTournamentController extends Controller
             ->update(['skor_akhir' => $teamScore]);
 
         return response()->json(['success' => true, 'skor_akhir' => $teamScore]);
+    }
+
+    /**
+     * Check if team has finished (submitted).
+     * Used by polling mechanism to redirect all team members to leaderboard
+     * when one member submits.
+     */
+    public function teamFinishStatus($id)
+    {
+        $userId = session('pengguna_id');
+        if (!$userId) {
+            return response()->json(['finished' => false], 401);
+        }
+
+        // Temukan user's peserta untuk tournament
+        $peserta = DB::table('pesertaturnamen')
+            ->where('id_turnamen', $id)
+            ->where('id_pengguna', $userId)
+            ->first();
+
+        if (!$peserta) {
+            return response()->json(['finished' => false]);
+        }
+
+        // Mode tim: cek apakah team peserta sudah finished
+        if ($peserta->id_tim) {
+            $teamPeserta = DB::table('pesertaturnamen')
+                ->where('id_turnamen', $id)
+                ->where('id_tim', $peserta->id_tim)
+                ->first();
+
+            if ($teamPeserta && $teamPeserta->status === 'finished') {
+                Log::info('Team finish status: team is finished', [
+                    'id_tim' => $peserta->id_tim,
+                    'id_turnamen' => $id
+                ]);
+                return response()->json(['finished' => true, 'team_finished' => true]);
+            }
+        }
+
+        return response()->json(['finished' => false]);
+    }
+
+    /**
+     * [NEW] Endpoint untuk polling submitted questions status untuk seluruh tim.
+     * Digunakan untuk menampilkan status submission yang konsisten di semua anggota tim.
+     */
+    public function teamSubmissionStatus($id)
+    {
+        $userId = session('pengguna_id');
+        if (!$userId) {
+            return response()->json(['error' => 'Not authenticated'], 401);
+        }
+
+        // Temukan peserta untuk user ini di tournament
+        $peserta = DB::table('pesertaturnamen')
+            ->where('id_turnamen', $id)
+            ->where('id_pengguna', $userId)
+            ->first();
+
+        if (!$peserta) {
+            Log::warning('Team submission status: peserta not found', [
+                'id_turnamen' => $id,
+                'id_pengguna' => $userId
+            ]);
+            return response()->json(['submitted_ids' => []]);
+        }
+
+        // Ambil semua jawaban yang telah disubmit oleh tim (id_peserta = team's id_peserta)
+        // Jika user adalah anggota tim, ambil jawaban dari team peserta
+        if ($peserta->id_tim) {
+            // Mode TIM: ambil team's peserta (yang memiliki id_tim yang sama)
+            $teamPeserta = DB::table('pesertaturnamen')
+                ->where('id_turnamen', $id)
+                ->where('id_tim', $peserta->id_tim)
+                ->first();
+
+            if ($teamPeserta) {
+                $submittedQuestions = DB::table('turnamen_jawaban_peserta')
+                    ->where('id_peserta', $teamPeserta->id_peserta)
+                    ->pluck('id_pertanyaan_turnamen')
+                    ->toArray();
+
+                Log::info('Team submission status found (team mode)', [
+                    'id_tim' => $peserta->id_tim,
+                    'id_peserta' => $teamPeserta->id_peserta,
+                    'submitted_count' => count($submittedQuestions),
+                    'submitted_ids' => $submittedQuestions
+                ]);
+
+                return response()->json(['submitted_ids' => $submittedQuestions]);
+            }
+        }
+
+        // Fallback: jika mode solo atau tidak ada team
+        $submittedQuestions = DB::table('turnamen_jawaban_peserta')
+            ->where('id_peserta', $peserta->id_peserta)
+            ->pluck('id_pertanyaan_turnamen')
+            ->toArray();
+
+        Log::info('Team submission status found (fallback/solo mode)', [
+            'id_peserta' => $peserta->id_peserta,
+            'submitted_count' => count($submittedQuestions),
+            'submitted_ids' => $submittedQuestions
+        ]);
+
+        return response()->json(['submitted_ids' => $submittedQuestions]);
     }
 
 

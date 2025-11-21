@@ -131,7 +131,7 @@ class ProfileController extends Controller
 
         $user->save();
 
-        // ✅ pastikan session login tetap aktif & diperbarui
+       
         session(['id_pengguna' => $user->id_pengguna]);
         session(['pengguna_username' => $user->username]);
 
