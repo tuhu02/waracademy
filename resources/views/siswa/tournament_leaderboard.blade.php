@@ -37,6 +37,77 @@
             background: rgba(106, 168, 250, 0.5);
             border-radius: 10px;
         }
+        #top3-container {
+            transition: .3s ease;
+        }
+
+        .podium-card {
+            position: relative;
+            padding: 24px;
+            text-align:center;
+            border-radius: 22px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+            transition: .3s ease;
+        }
+        .podium-card:hover {
+            transform: translateY(-8px) scale(1.05);
+        }
+
+        /* Medal Animasi */
+        .medal {
+            font-size: 3.4rem;
+            margin-bottom: 8px;
+            animation: float 2.5s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%{transform:translateY(0);}
+            50%{transform:translateY(-8px);}
+            100%{transform:translateY(0);}
+        }
+
+        /* Glow warna */
+        .gold-glow { text-shadow:0 0 15px rgba(255,220,80,0.7); }
+        .silver-glow{ text-shadow:0 0 15px rgba(200,200,200,0.7); }
+        .bronze-glow{ text-shadow:0 0 15px rgba(255,160,90,0.7); }
+
+        /* EXP Box */
+        .exp-box {
+            margin-top:10px;
+            padding:6px 12px;
+            border-radius:14px;
+            border:1px solid rgba(255,255,255,0.1);
+            font-size:.9rem;
+            display:inline-block;
+            backdrop-filter:blur(8px);
+        }
+        .exp-gold{ background:linear-gradient(90deg,rgba(255,230,100,.2),rgba(255,240,150,.1)); }
+        .exp-silver{ background:linear-gradient(90deg,rgba(220,220,220,.2),rgba(240,240,240,.1)); }
+        .exp-bronze{ background:linear-gradient(90deg,rgba(255,180,90,.2),rgba(255,200,130,.1)); }
+
+        /* Podium Base */
+        .podium-base {
+            width:70px;
+            margin:auto;
+            border-radius:16px 16px 0 0;
+            border-top:1px solid rgba(255,255,255,0.2);
+            margin-top:20px;
+        }
+        .podium-0 { background:rgba(255,230,100,.25); }
+        .podium-1 { background:rgba(200,200,200,.25); }
+        .podium-2 { background:rgba(255,180,90,.25); }
+
+        /* Shine overlay */
+        .shine {
+            position:absolute;
+            inset:0;
+            border-radius:22px;
+            background:linear-gradient(135deg,rgba(255,255,255,0.2),transparent);
+            opacity:0.05;
+            pointer-events:none;
+        }
     </style>
 </head>
 
@@ -81,6 +152,110 @@
                     Peringkat Real-time Peserta Turnamen
                 </p>
             </div>
+
+            {{-- TOP 3 TURNAMEN --}}
+            @php
+                $top3 = collect($leaderboard ?? [])->take(3)->values();
+                $bonus = $turnamen->bonus_exp ?? 0;
+
+                // Reorder manually so podium always: 2 - 1 - 3
+                $podiumOrder = [
+                    $top3[1] ?? null, // posisi kiri (peringkat 2)
+                    $top3[0] ?? null, // posisi tengah (peringkat 1)
+                    $top3[2] ?? null  // posisi kanan (peringkat 3)
+                ];
+            @endphp
+
+            <div class="w-full flex flex-col items-center mb-10">
+
+                <div id="podium-container" class="grid grid-cols-3 gap-6 items-end justify-center">
+
+                    @foreach ($podiumOrder as $pos => $p)
+                        @if(!$p) 
+                            {{-- Jika data kurang dari 3 --}}
+                            <div></div>
+                            @continue
+                        @endif
+
+                        @php
+                            // posisi podium sebenarnya (ranking asli)
+                            $i = array_search($p, $top3->toArray());
+
+                            // tinggi podium sesuai ranking
+                            $heights = ['h-26', 'h-18', 'h-10'];
+                            $podiumHeight = $heights[$i];
+                        @endphp
+
+                        <div class="relative flex flex-col items-center text-center 
+                            px-6 py-6 rounded-3xl
+                            bg-white/5 backdrop-blur-xl border border-white/10
+                            shadow-[0_8px_30px_rgba(0,0,0,0.35)]
+                            hover:scale-105 hover:-translate-y-1 transition-all duration-300
+                            {{ $i==0 ? 'scale-110 z-10' : '' }}
+                        ">
+
+                            {{-- Medal --}}
+                            <div class="text-6xl mb-3 drop-shadow-md animate-[bounce_2s_ease-in-out_infinite]
+                                {{ $i==0 ? 'text-yellow-400' : ($i==1 ? 'text-gray-300' : 'text-orange-300') }}">
+                                {{ ['🥇','🥈','🥉'][$i] }}
+                            </div>
+
+                            {{-- Nama --}}
+                            <div class="text-xl font-bold truncate max-w-[180px]">
+                                {{ $p['nama'] ?? 'Peserta' }}
+                            </div>
+
+                            {{-- Skor --}}
+                            <div class="text-blue-200 text-sm mt-1">
+                                Skor: <span class="font-bold">{{ $p['skor'] ?? 0 }}</span>
+                            </div>
+
+                            {{-- Progres --}}
+                            <div class="text-gray-400 text-xs mt-1">
+                                Progres: {{ ($p['correct'] ?? 0) }}/{{ ($p['answered'] ?? 0) }}
+                            </div>
+
+                            {{-- Bonus EXP --}}
+                            <div class="mt-3 text-sm bg-gradient-to-r
+                                {{ $i==0 ? 'from-yellow-400/20 to-yellow-200/10' : ($i==1 ? 'from-gray-300/20 to-gray-200/10' : 'from-orange-300/20 to-orange-200/10') }}
+                                px-3 py-1 rounded-xl border border-white/10 text-white shadow-inner">
+                                🎁 EXP:
+                                <b>
+                                    {{
+                                        $i === 0
+                                            ? round($bonus * 0.50)
+                                            : ($i === 1
+                                                ? round($bonus * 0.30)
+                                                : round($bonus * 0.20))
+                                    }}
+                                </b>
+                            </div>
+
+                            {{-- Podium Box --}}
+                            <div class="mt-6 w-full flex items-end justify-center">
+                                <div class="w-20 {{ $podiumHeight }} rounded-t-xl 
+                                    {{ $i==0 ? 'bg-yellow-400/20' : ($i==1 ? 'bg-gray-300/20' : 'bg-orange-300/20') }}
+                                    border-t border-white/20 shadow-inner">
+                                </div>
+                            </div>
+
+                            {{-- Shine Overlay --}}
+                            <div class="absolute inset-0 rounded-3xl pointer-events-none
+                                bg-gradient-to-br from-white/20 to-transparent opacity-5"></div>
+                        </div>
+
+                    @endforeach
+
+                </div>
+
+                @if(count($top3) === 0)
+                    <div class="text-center text-gray-400 italic py-4">
+                        Belum ada data Top 3.
+                    </div>
+                @endif
+
+            </div>
+
 
             <div class="overflow-x-auto custom-scroll rounded-xl shadow-lg border border-white/5">
                 <table class="w-full text-center text-white min-w-[350px]">
@@ -195,6 +370,7 @@
                                 rank: item.rank || (idx + 1),
                                 progres: (item.correct ?? 0) + '/' + (item.answered ?? 0)
                             }));
+                            this.top3 = this.leaderboard.slice(0, 3)
                         }
                     } catch (error) {
                         console.error("Gagal memuat leaderboard:", error);
@@ -202,6 +378,78 @@
                 }
             }
         }
+
+        function loadLeaderboard() {
+            fetch("{{ route('ajax-leaderboard', ['id' => $turnamen->id_turnamen]) }}")
+                .then(res => res.json())
+                .then(data => {
+                    updatePodium(data.leaderboard);
+                })
+                .catch(err => console.error("Leaderboard error:", err));
+        }
+
+        function updatePodium(leaderboard) {
+            const el = document.querySelector("#podium-container");
+            if (!el) return;
+
+            let top3 = leaderboard.slice(0, 3);
+
+            let html = "";
+
+            // Format ulang sesuai Blade sebelumnya → tetap podium 2 - 1 - 3
+            let podiumOrder = [
+                top3[1],
+                top3[0],
+                top3[2],
+            ];
+
+            podiumOrder.forEach((p, idx) => {
+                if (!p) {
+                    html += `<div></div>`;
+                    return;
+                }
+
+                let i = idx === 0 ? 1 : (idx === 1 ? 0 : 2);
+                let podiumHeight = ['h-26','h-18','h-10'][i];
+                let medal = ['🥇','🥈','🥉'][i];
+                let colors = ['text-yellow-400','text-gray-300','text-orange-300'][i];
+
+                html += `
+                    <div class="relative flex flex-col items-center text-center 
+                        px-6 py-6 rounded-3xl bg-white/5 backdrop-blur-xl
+                        border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.35)]
+                        hover:scale-105 hover:-translate-y-1 transition-all duration-300
+                        ${i==0 ? 'scale-110 z-10' : ''}
+                    ">
+                        <div class="text-6xl mb-3 drop-shadow-md ${colors}">
+                            ${medal}
+                        </div>
+
+                        <div class="text-xl font-bold truncate max-w-[180px]">
+                            ${p.nama}
+                        </div>
+
+                        <div class="text-blue-200 text-sm mt-1">
+                            Skor: <span class="font-bold">${p.skor}</span>
+                        </div>
+
+                        <div class="text-gray-400 text-xs mt-1">
+                            Progres: ${p.correct}/${p.answered}
+                        </div>
+
+                        <div class="mt-6 w-full flex items-end justify-center">
+                            <div class="w-20 ${podiumHeight} rounded-t-xl 
+                                bg-white/10 border-t border-white/20 shadow-inner">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            el.innerHTML = html;
+        }
+
+        setInterval(loadLeaderboard, 5000); // update tiap 5 detik
     </script>
     @endif
 

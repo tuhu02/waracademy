@@ -81,36 +81,102 @@
         mix-blend-mode: lighten;
      ">
 
-  <div class="relative w-full text-center animate-fadeInDown z-10 pt-6 px-6">
+  <div class="relative w-full text-center animate-fadeInDown z-0 pt-6 px-6">
     <h1 class="font-blackops text-3xl md:text-5xl font-extrabold bg-gradient-to-b from-[#dce6f2] via-[#a3d3fa] to-[#6aa8fa] bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(70,150,255,0.6)]">
       Menu Utama
     </h1>
 
-    <div x-data="{ open: false }" class="absolute right-6 top-6 flex items-center">
-      <button @click="open = !open" class="flex items-center gap-2 focus:outline-none">
-        <span class="hidden md:block text-white/90 font-medium text-shadow">{{ session('pengguna_username') ?? 'Siswa' }}</span>
+    <!-- Wrapper Desktop -->
+    <div class="absolute right-0 md:right-5 top-3 flex flex-col md:flex-row items-start md:items-center space-y-3 md:space-y-0 md:space-x-4 bg-white/10 px-6 py-3 rounded-2xl border border-[#6aa8fa]/50 backdrop-blur-md shadow-lg hidden md:flex">
+      
+      <!-- Avatar + Username -->
+      <div class="flex items-center space-x-3">
         <img src="{{ asset('avatars/' . ($user->avatar_url ?? 'cat.png')) }}" 
-             alt="Avatar" class="w-10 h-10 border-2 border-[#6aa8fa] rounded-full bg-white/20 shadow-sm backdrop-blur-sm object-cover">
+            alt="Avatar" 
+            class="w-10 h-10 border-2 border-[#6aa8fa] rounded-full bg-white/20 shadow-sm backdrop-blur-sm object-cover">
+        <span class="text-white/90 font-medium text-shadow">{{ session('pengguna_username') ?? 'Siswa' }}</span>
+      </div>
+
+      <!-- EXP BAR -->
+      <div class="relative flex flex-col w-full md:w-36">
+        <div class="flex items-center mb-1">
+          <span class="text-yellow-300 text-xl drop-shadow-[0_0_5px_rgba(255,230,120,0.8)]">⚡</span>
+          <span class="ml-2 text-sm font-semibold text-blue-100 tracking-wide">EXP</span>
+        </div>
+        <div class="relative w-full h-3 bg-blue-950/50 rounded-full overflow-hidden border border-blue-400/40">
+          <div id="expBar" class="absolute top-0 left-0 h-full bg-gradient-to-r from-[#38bdf8] via-[#3b82f6] to-[#2563eb] shadow-[0_0_10px_rgba(59,130,246,0.6)] transition-all duration-700 ease-out" style="width: {{ $expPercent }}%"></div>
+        </div>
+        <span id="expValue" class="mt-1 text-sm text-blue-100 font-bold tracking-wide">{{$exp}}</span>
+      </div>
+
+      <!-- BINTANG -->
+      <div class="relative flex flex-col w-full md:w-20">
+        <div class="flex items-center mb-1">
+          <span class="relative inline-block text-yellow-400 text-xl animate-spin-slow drop-shadow-[0_0_8px_rgba(255,220,100,0.8)]">⭐</span>
+          <span class="ml-2 text-sm font-semibold text-blue-100 tracking-wide">Bintang</span>
+        </div>
+        <div class="relative w-full h-3 bg-blue-950/50 rounded-full overflow-hidden border border-yellow-400/40">
+          <div id="starBar" class="absolute top-0 left-0 h-full bg-gradient-to-r from-[#fde68a] via-[#facc15] to-[#fbbf24] shadow-[0_0_8px_rgba(250,204,21,0.7)] transition-all duration-700 ease-out" style="width: {{ $starPercent }}%"></div>
+        </div>
+        <span id="starValue" class="mt-1 text-sm text-blue-100 font-bold tracking-wide">{{ $bintang }}</span>
+      </div>
+    </div>
+
+    <!-- Mobile: Avatar + Popover -->
+    <div x-data="{ open: false }" class="absolute right-6 top-6 flex items-center md:hidden">
+      <button @click="open = !open" class="focus:outline-none">
+        <img src="{{ asset('avatars/' . ($user->avatar_url ?? 'cat.png')) }}" 
+            alt="Avatar" 
+            class="w-12 h-12 border-2 border-[#6aa8fa] rounded-full bg-white/20 shadow-sm backdrop-blur-sm object-cover cursor-pointer">
       </button>
 
-      <div x-show="open" @click.away="open = false"
-           x-transition
-           class="absolute right-0 mt-12 w-48 bg-white/90 border border-gray-200 rounded-lg shadow-lg py-2 text-sm z-50 text-gray-800">
-          <div class="px-4 py-2 border-b border-gray-200 md:hidden font-bold text-blue-600">
-             {{ session('pengguna_username') ?? 'Siswa' }}
+      <!-- Popover Mobile -->
+      <div x-show="open"
+        @click.away="open = false"
+        x-transition
+        class="fixed top-[calc(50px+0.5rem)] right-6 w-64 bg-white rounded-2xl p-4 border border-gray-300 shadow-lg z-00">
+        <!-- Username -->
+        <div class="px-2 py-1 font-bold text-black border-b border-gray-200">
+          {{ session('pengguna_username') ?? 'Siswa' }}
+        </div>
+
+        <!-- EXP -->
+        <div class="flex flex-col w-full">
+          <div class="flex items-center mb-1">
+            <span class="text-yellow-300 text-xl">⚡</span>
+            <span class="ml-2 text-sm font-semibold text-black tracking-wide">EXP</span>
           </div>
-          <form method="POST" action="{{ route('logout') }}">
-              @csrf
-              <button type="submit" 
-                  class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-semibold">
-                  Logout
-              </button>
-          </form>
+          <div class="relative w-full h-3 bg-blue-950/50 rounded-full overflow-hidden border border-blue-400/40">
+            <div id="expBarMobile" class="absolute top-0 left-0 h-full bg-gradient-to-r from-[#38bdf8] via-[#3b82f6] to-[#2563eb] shadow-[0_0_10px_rgba(59,130,246,0.6)] transition-all duration-700 ease-out" style="width: {{ $expPercent }}%"></div>
+          </div>
+          <span class="mt-1 text-sm text-black font-bold tracking-wide">{{$exp}}</span>
+        </div>
+
+        <!-- Bintang -->
+        <div class="flex flex-col w-full">
+          <div class="flex items-center mb-1">
+            <span class="text-yellow-400 text-xl">⭐</span>
+            <span class="ml-2 text-sm font-semibold text-black tracking-wide">Bintang</span>
+          </div>
+          <div class="relative w-full h-3 bg-blue-950/50 rounded-full overflow-hidden border border-yellow-400/40">
+            <div id="starBarMobile" class="absolute top-0 left-0 h-full bg-gradient-to-r from-[#fde68a] via-[#facc15] to-[#fbbf24] shadow-[0_0_8px_rgba(250,204,21,0.7)] transition-all duration-700 ease-out" style="width: {{ $starPercent }}%"></div>
+          </div>
+          <span class="mt-1 text-sm text-black font-bold tracking-wide">{{ $bintang }}</span>
+        </div>
+
+        <!-- Logout -->
+        <form method="POST" action="{{ route('logout') }}" class="mt-2">
+          @csrf
+          <button type="submit" 
+              class="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-semibold rounded-lg">
+              Logout
+          </button>
+        </form>
       </div>
     </div>
   </div>
 
-  <div class="flex-1 w-full max-w-[1400px] mx-auto z-10 flex items-center py-8 px-6">
+  <div class="flex-1 w-full max-w-[1400px] mx-auto z-0 flex items-center py-8 px-6">
     
     <div class="grid grid-cols-1 md:grid-cols-12 gap-8 w-full items-center">
 
@@ -134,7 +200,7 @@
                                 @elseif ($rank == 2) bg-gradient-to-br from-orange-400 to-orange-700 text-white ring-1 ring-orange-300/50
                                 @else bg-white/10 text-gray-300 border border-white/10
                                 @endif">
-                                <span class="z-10 leading-none pt-[2px]">{{ $rank + 1 }}</span>
+                                <span class="z-0 leading-none pt-[2px]">{{ $rank + 1 }}</span>
                                 @if ($rank <= 2)
                                     <span class="absolute -top-3 -right-2 text-xl drop-shadow-md" style="animation: crownBounce 3s infinite ease-in-out;">👑</span>
                                 @endif
@@ -248,7 +314,7 @@
                       shadow-[0_0_15px_rgba(0,0,0,0.5)]
                       hover:scale-105 hover:shadow-[0_0_25px_rgba(70,150,255,0.7)] hover:border-[#4fa3ff]
                       transition-all duration-300 overflow-hidden group">
-          <span class="relative z-10 flex items-center gap-2">
+          <span class="relative z-0 flex items-center gap-2">
               <span>🏆</span> Top 100
           </span>
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
@@ -261,6 +327,19 @@
   <div class="fixed right-10 bottom-10 w-32 h-32 rounded-full bg-blue-500/20 blur-[80px] pointer-events-none z-0"></div>
 
   <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const expBar = document.getElementById('expBar');
+      const starBar = document.getElementById('starBar');
+
+      // Ambil persentase dari Blade
+      const expPercent = {{ $expPercent }};
+      const starPercent = {{ $starPercent }};
+
+      // Animasi naik bar
+      setTimeout(() => { expBar.style.width = expPercent + '%'; }, 300);
+      setTimeout(() => { starBar.style.width = starPercent + '%'; }, 500);
+    });
+
     const audio = document.getElementById('bgMusic');
 
     // Fungsi fade out navigasi halus

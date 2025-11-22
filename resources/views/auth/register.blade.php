@@ -86,24 +86,6 @@
                         <input type="password" name="password_confirmation" required placeholder="Ulangi password"
                                class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300">
                     </div>
-                    <div class="opacity-0 animate-fadeIn delay-500" style="animation-fill-mode: forwards;">
-                        <label class="block text-sm font-medium mb-2 text-slate-300">Daftar sebagai</label>
-                        <div class="flex gap-3">
-                            <label class="flex-1 inline-flex items-center bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 cursor-pointer">
-                                <input type="radio" name="role" value="student" {{ old('role', 'student') == 'student' ? 'checked' : '' }} class="form-radio h-4 w-4 text-blue-500 mr-3">
-                                <span class="text-sm text-white">Student</span>
-                            </label>
-
-                            <label class="flex-1 inline-flex items-center bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 cursor-pointer">
-                                <input type="radio" name="role" value="teacher" {{ old('role') == 'teacher' ? 'checked' : '' }} class="form-radio h-4 w-4 text-blue-500 mr-3">
-                                <span class="text-sm text-white">Teacher</span>
-                            </label>
-                        </div>
-
-                        @error('role')
-                            <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
-                        @enderror
-                    </div>
                 </div>
 
                 <button type="submit" class="w-full mt-8 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all transform hover:scale-105 duration-300 opacity-0 animate-fadeIn delay-600" style="animation-fill-mode: forwards;">

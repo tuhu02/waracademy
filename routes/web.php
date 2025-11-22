@@ -45,29 +45,56 @@ Route::get('/home', function () {
 
     $user = Pengguna::find(session('pengguna_id'));
 
+    // Ambil progres terakhir pengguna
+    $progres = DB::table('progreslevelpengguna')
+        ->where('id_pengguna', $user->id_pengguna)
+        ->orderByDesc('id_progres')
+        ->first();
+
+    $expFromProgres = DB::table('progreslevelpengguna')
+        ->where('id_pengguna', $user->id_pengguna)
+        ->sum('exp'); // otomatis menjumlahkan semua baris
+    $expFromUser = $user->total_exp ?? 0;
+    $bintang = DB::table('progreslevelpengguna')
+        ->where('id_pengguna', $user->id_pengguna)
+        ->sum('bintang'); // otomatis menjumlahkan semua baris
+
+    $expFromTournament = DB::table('pesertaturnamen')
+    ->where('id_pengguna', $user->id_pengguna)
+    ->sum('bonus_exp_didapat');
+
+    $exp = $expFromProgres + $expFromUser + $expFromTournament;
+
+    // Hitung persentase (misal max EXP 1000, max Bintang 20)
+    $expPercent = min(100, ($exp / 1000) * 100);
+    $starPercent = min(100, ($bintang / 60) * 100);
+
     // === TOP 5 PLAYER ===
     $topPlayers = DB::table('pengguna')
-        ->leftJoin('progreslevelpengguna', 'pengguna.id_pengguna', '=', 'progreslevelpengguna.id_pengguna')
-        ->leftJoin('riwayatpertandingan', 'pengguna.id_pengguna', '=', 'riwayatpertandingan.id_pengguna')
         ->select(
             'pengguna.id_pengguna',
             'pengguna.username',
             'pengguna.avatar_url',
-                DB::raw('
-                    COALESCE(MAX(pengguna.total_exp), 0) +
-                    COALESCE(SUM(progreslevelpengguna.exp), 0) +
-                    COALESCE(SUM(riwayatpertandingan.exp_didapat), 0)
-                AS total_exp')
+            DB::raw('
+                COALESCE(pengguna.total_exp,0) +
+                COALESCE((SELECT SUM(exp) FROM progreslevelpengguna WHERE id_pengguna=pengguna.id_pengguna),0) +
+                COALESCE((SELECT SUM(exp_didapat) FROM riwayatpertandingan WHERE id_pengguna=pengguna.id_pengguna),0) +
+                COALESCE((SELECT SUM(bonus_exp_didapat) FROM pesertaturnamen WHERE id_pengguna=pengguna.id_pengguna),0)
+            AS total_exp')
         )
-        ->groupBy('pengguna.id_pengguna', 'pengguna.username', 'pengguna.avatar_url')
         ->orderByDesc('total_exp')
+        ->where('role', 'student')
         ->limit(5)
         ->get();
 
     return view('siswa.home', [
         'username' => session('pengguna_username'),
         'user' => $user,
-        'topPlayers' => $topPlayers  // <-- kirim ke Blade
+        'topPlayers' => $topPlayers,
+        'exp' => $exp,
+        'bintang' => $bintang,
+        'expPercent' => $expPercent,
+        'starPercent' => $starPercent
     ]);
 })->name('home');
 
@@ -93,17 +120,51 @@ Route::match(['get', 'post'], '/tournament/join', [SiswaTournamentController::cl
 // leaderboard
 Route::get('/leaderboard/top100', [LeaderboardController::class, 'top100'])
     ->name('leaderboard.top100');
-
+    
 Route::get('/tournament', function () {
-    if (!session()->has('pengguna_id')) return redirect()->route('login');
-
-    $user = Pengguna::find(session('pengguna_id'));
-    return view('siswa.tournament', [
-        'username' => session('pengguna_username'),
-        'user' => $user
-    ]);
+        // Cek session pengguna
+        if (!session()->has('pengguna_id')) {
+            return redirect()->route('login');
+        }
+    
+        $userId = session('pengguna_id');
+    
+        // Ambil data pengguna
+        $user = Pengguna::find($userId);
+    
+        // Ambil progres EXP & Bintang
+        $progres = DB::table('progreslevelpengguna')
+            ->where('id_pengguna', $userId)
+            ->orderByDesc('id_progres')
+            ->first(); // ambil progres terakhir
+    
+        // Inisialisasi default
+        $exp = 0;
+        $bintang = 0;
+        $expPercent = 0;
+        $starPercent = 0;
+    
+        if ($progres) {
+            $exp = $progres->exp;
+            $bintang = $progres->bintang;
+    
+            // Hitung persentase EXP (max 1000)
+            $expPercent = min(100, ($exp / 1000) * 100);
+    
+            // Hitung persentase bintang (max 20)
+            $starPercent = min(100, ($bintang / 20) * 100);
+        }
+    
+        return view('siswa.tournament', [
+            'username' => session('pengguna_username'),
+            'user' => $user,
+            'exp' => $exp,
+            'bintang' => $bintang,
+            'expPercent' => $expPercent,
+            'starPercent' => $starPercent
+        ]);
 })->name('tournament');
-
+    
 /* LOBBY */
 Route::get('/tournament/lobby/{kode}', [SiswaTournamentController::class, 'lobby'])
     ->name('tournament.lobby');
@@ -190,6 +251,10 @@ Route::post('/guru/tournament/{id}/start', [TournamentController::class, 'startT
 Route::post('/guru/tournament/{id}/end', [TournamentController::class, 'endTournament'])
     ->name('guru.tournament.end');
 
+Route::get('/guru/tournament/{id}/participants',
+    [TournamentController::class, 'participants']
+)->name('guru.tournament.participants');
+
 Route::get('/guru/soal/json', function () {
 
     return TurnamenPertanyaan::with([
@@ -215,6 +280,22 @@ Route::get('/guru/soal/json', function () {
     });
 
 })->name('guru.soal.json');
+
+Route::get(
+    '/guru/tournament/{id}/ajax-status',
+    [TournamentController::class, 'ajaxStatus']
+)->name('ajax-status');
+
+Route::post(
+    '/guru/tournament/{id}/ajax-force-end',
+    [TournamentController::class, 'ajaxForceEnd']
+)->name('ajax-force-end');
+
+Route::get('/guru/tournament/{id}/ajax-top3', [TournamentController::class, 'ajaxTop3']);
+
+// Realtime Leaderboard
+Route::get('/siswa/tournament/{id}/ajax-leaderboard', [SiswaController::class, 'ajaxLeaderboard'])
+    ->name('ajax-leaderboard');
 
 /*
 |--------------------------------------------------------------------------

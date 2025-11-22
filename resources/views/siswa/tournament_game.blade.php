@@ -130,7 +130,7 @@
 
             <script>
                 window.tournamentData = {
-                    tournamentId: {{ $turnamen->id_turnamen }},
+                    id: {{ $turnamen->id_turnamen }},
                     duration: {{ $turnamen->durasi_pengerjaan }},
                     questions: @json(array_values($questions)),
                     submitQuestionUrl: '{{ route('tournament.submit.question', ['id' => $turnamen->id_turnamen]) }}',
@@ -141,7 +141,7 @@
                 };
             </script>
 
-            <div x-data="quizController(window.tournamentData.duration, window.tournamentData.questions, window.tournamentData.submitQuestionUrl, window.tournamentData.submitAllUrl, window.tournamentData.mode)" 
+            <div x-data="quizController(window.tournamentData.id, window.tournamentData.duration, window.tournamentData.questions, window.tournamentData.submitQuestionUrl, window.tournamentData.submitAllUrl, window.tournamentData.mode)" 
                  x-init="init()" 
                  class="flex flex-col flex-1">
 
@@ -276,7 +276,6 @@
                                 </template>
                             </div>
                         </div>
-
                     </div>
                 </div>
 
@@ -377,13 +376,14 @@
     </div>
 
     <script>
-        function quizController(duration, questions, submitQuestionUrl, submitAllUrl, mode) {
+        function quizController(tournamentId, duration, questions, submitQuestionUrl, submitAllUrl, mode) {
             return {
+                tournamentId: tournamentId,
                 duration: duration,
                 questions: questions || [],
                 submitQuestionUrl: submitQuestionUrl,
                 submitAllUrl: submitAllUrl,
-                mode: mode || 'individu',
+                mode: mode || 'solo',
                 currentQuestionIndex: 0,
                 answers: {},
                 timer: (duration || 0) * 60,
@@ -474,7 +474,7 @@
 
                     this.submittingQuestion = true;
                     try {
-                        const payload = { single: true, question_id: questionId, answer_id: this.answers[questionId], time_taken: (this.duration * 60) - this.timer };
+                        const payload = { single: true, id_pertanyaan_turnamen: questionId, chosen_option: this.answers[questionId], time_taken: (this.duration * 60) - this.timer };
                         const res = await fetch(this.submitQuestionUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json' },
@@ -628,58 +628,48 @@
                         }
                     }
                 },
-
-                extractTournamentId() {
-                    // First try to get from window.tournamentData if available
-                    if (window.tournamentData && window.tournamentData.tournamentId) {
-                        return window.tournamentData.tournamentId;
-                    }
-                    // Fallback: Extract tournament ID from URL /tournament/start/{id}
-                    const pathParts = window.location.pathname.split('/').filter(p => p);
-                    if (pathParts.length >= 3 && pathParts[1] === 'start') {
-                        return pathParts[2];
-                    }
-                    return 'leaderboard'; // Fallback URL
+                submitQuiz() {
+                    this.submitSolo();
                 },
+                async submitSolo() {
+                    let pesertaId = null;
 
-                async submitQuiz() {
-                    // Mode individu: kirim seluruh jawaban seperti sebelumnya
-                    if (this.mode === 'tim') {
-                        // Jika mode tim, gunakan submitAll agar konsisten, atau biarkan user memilih submit per-soal
-                        return this.submitAll(true);  // Pass true to indicate this is auto-submit on timeout
-                    }
-
-                    try {
-                        const payload = {
-                            answers: this.answers,
-                            time_taken: (this.duration * 60) - this.timer
-                        };
-
-                        const res = await fetch(this.submitUrl, {
+                    for (const qId in this.answers) {
+                        const response = await fetch(this.submitQuestionUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                                 'Accept': 'application/json'
                             },
-                            body: JSON.stringify(payload)
+                            body: JSON.stringify({
+                                id_pertanyaan_turnamen: qId,
+                                chosen_option: this.answers[qId]
+                            })
                         });
 
-                        if (!res.ok) {
-                            alert('Error submitting quiz');
-                            return;
-                        }
+                        const data = await response.json();
 
-                        const data = await res.json().catch(()=>null);
-                        if (data && data.redirect_url) {
-                            window.location.href = data.redirect_url;
-                        } else {
-                            window.location.href = '/tournament/leaderboard';
+                        // Ambil peserta_id dari response backend
+                        if (!pesertaId && data.peserta_id) {
+                            pesertaId = data.peserta_id;
                         }
-                    } catch (error) {
-                        console.error('Submit error:', error);
-                        alert('Error submitting quiz');
                     }
+
+                    if (!pesertaId) {
+                        alert("Peserta ID tidak ditemukan!");
+                        return;
+                    }
+
+                    await fetch(`/tournament/finish/${pesertaId}`, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content"),
+                            "Accept": "application/json",
+                        }
+                    });
+
+                    window.location.href = `/tournament/leaderboard/${this.tournamentId}`;
                 }
             };
         }

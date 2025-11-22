@@ -507,12 +507,22 @@
                 openBankSoalModal() {
                     this.showBankSoal = true;
 
-                    // Ambil bank soal dari Laravel via API
                     fetch("{{ route('guru.soal.json') }}")
-                        .then(r => r.json())
+                        .then(res => res.json())
                         .then(data => {
-                            this.bankSoal = data;
-                        });
+                            const uniqueSoalMap = new Map();
+
+                            data.forEach(soal => {
+                                const teks = soal.text.trim(); // pakai key text
+                                if (!uniqueSoalMap.has(teks)) {
+                                    uniqueSoalMap.set(teks, soal);
+                                }
+                            });
+
+                            // hasil array soal unik
+                            this.bankSoal = Array.from(uniqueSoalMap.values());
+                        })
+                        .catch(err => console.error(err));
                 },
 
                 closeBankSoalModal() {

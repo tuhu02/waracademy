@@ -11,30 +11,31 @@ class LeaderboardController extends Controller
     {
         // Ambil semua pengguna terlebih dahulu
         $usersAll = Pengguna::select('id_pengguna', 'username', 'avatar_url')
+            ->where('role', 'student')
             ->get()
             ->map(function ($user) {
 
-                // Total exp dari progreslevelpengguna
                 $expProgres = DB::table('progreslevelpengguna')
                     ->where('id_pengguna', $user->id_pengguna)
                     ->sum('exp');
 
-                // Total exp dari riwayatpertandingan
                 $expRiwayat = DB::table('riwayatpertandingan')
                     ->where('id_pengguna', $user->id_pengguna)
                     ->sum('exp_didapat');
 
-                // Total bintang dari progreslevelpengguna
+                $expTurnamen = DB::table('pesertaturnamen')
+                    ->where('id_pengguna', $user->id_pengguna)
+                    ->sum('bonus_exp_didapat');
+
                 $bintangProgres = DB::table('progreslevelpengguna')
                     ->where('id_pengguna', $user->id_pengguna)
                     ->sum('bintang');
 
-                // Total bintang dari riwayatpertandingan
                 $bintangRiwayat = DB::table('riwayatpertandingan')
                     ->where('id_pengguna', $user->id_pengguna)
                     ->sum('bintang_didapat');
 
-                $user->total_exp = (int)$expProgres + (int)$expRiwayat;
+                $user->total_exp = (int)$expProgres + (int)$expRiwayat + (int)$expTurnamen;
                 $user->total_bintang = (int)$bintangProgres + (int)$bintangRiwayat;
 
                 return $user;

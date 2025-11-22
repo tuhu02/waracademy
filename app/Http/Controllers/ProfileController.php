@@ -33,7 +33,11 @@ class ProfileController extends Controller
             ->where('id_pengguna', $id)
             ->sum('exp_didapat');
 
-        $totalExp = ($user->total_exp ?? 0) + (int)$expFromProgres + (int)$expFromRiwayat;
+        $expFromTournament = DB::table('pesertaturnamen')
+            ->where('id_pengguna', $user->id_pengguna)
+            ->sum('bonus_exp_didapat');
+
+        $totalExp = ($user->total_exp ?? 0) + (int)$expFromProgres + (int)$expFromRiwayat + (int)$expFromTournament;
 
         // Total bintang: ambil max bintang per level lalu jumlahkan
         $bintangPerLevel = DB::table('progreslevelpengguna')
@@ -78,6 +82,9 @@ class ProfileController extends Controller
                 } else {
                     $rt->peringkat = $pos + 1; // array index -> rank
                     $rt->total_participants = count($participantsOrdered);
+                    $rt->bonus_exp_didapat = $rt->bonus_exp_didapat ?? DB::table('pesertaturnamen')
+                    ->where('id_peserta', $rt->id_peserta)
+                    ->value('bonus_exp_didapat') ?? 0;
                 }
             } catch (\Exception $e) {
                 // Jika terjadi error (mis. kolom tidak ada), biarkan peringkat null
@@ -99,7 +106,6 @@ class ProfileController extends Controller
             'riwayatLevel', 'riwayatTurnamen', 'jumlahTurnamen', 'availableAvatars'
         ));
     }
-
     public function update(Request $request, $id)
     {
         // $id = session('id_pengguna');

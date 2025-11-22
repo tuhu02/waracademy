@@ -105,6 +105,7 @@ class TournamentController extends Controller
                 'mode' => $data['mode'], // <-- BARU
                 'max_team_members' => ($data['mode'] === 'tim') ? $data['maxTeamMembers'] : null, // <-- BARU
                 'durasi_pengerjaan' => $data['duration'],
+                'skor_per_soal' => $data['point_per_question'],
                 'max_peserta' => $data['max_participants'],
                 'deskripsi' => $data['description'] ?? null,
                 'bonus_exp' => $data['bonus_exp'],
@@ -470,8 +471,7 @@ class TournamentController extends Controller
                 'status' => 'Selesai',
                 'updated_at' => Carbon::now()
             ]);
-        // -------------------------
-
+        $this->giveBonusExpToTop3($id);
         return response()->json(['message' => 'Turnamen berhasil diakhiri!']);
     }
 
@@ -502,12 +502,10 @@ class TournamentController extends Controller
                         'status' => 'Selesai',
                         'updated_at' => $now
                     ]);
+                $this->giveBonusExpToTop3($id);
             }
         }
     }
-
-
-
 
     public function getData()
     {
@@ -541,5 +539,88 @@ class TournamentController extends Controller
         return view('guru.tournament.create');
     }
 
+    public function participants($id)
+    {
+        $participants = DB::table('pesertaturnamen')
+            ->leftJoin('pengguna', 'pesertaturnamen.id_pengguna', '=', 'pengguna.id_pengguna')
+            ->where('pesertaturnamen.id_turnamen', $id)
+            ->select(
+                'pesertaturnamen.id_peserta as id',
+                'pengguna.username as nama'
+            )
+            ->orderBy('pesertaturnamen.joined_at', 'asc')
+            ->get();
+    
+        return response()->json($participants);
+    }      
+
+    public function ajaxStatus($id)
+    {
+        $turnamen = DB::table('turnamen')->where('id_turnamen', $id)->first();
+        if (!$turnamen) {
+            return response()->json(['error' => 'Turnamen tidak ditemukan'], 404);
+        }
+
+        return response()->json([
+            'id_turnamen' => $turnamen->id_turnamen,
+            'status' => $turnamen->status,
+            'tanggal_pelaksanaan' => $turnamen->tanggal_pelaksanaan,
+            'start_time' => Carbon::parse($turnamen->start_time)->toIso8601String(),
+            'end_time' => Carbon::parse($turnamen->end_time)->toIso8601String(),
+            'durasi_pengerjaan' => $turnamen->durasi_pengerjaan,
+        ]);
+    }
+
+    public function ajaxForceEnd(Request $request, $id)
+    {
+        $turnamen = DB::table('turnamen')->where('id_turnamen', $id)->first();
+        if (!$turnamen) {
+            return response()->json(['error' => 'Turnamen tidak ditemukan'], 404);
+        }
+
+        // Jalankan check/update server-side
+        $this->checkAndUpdateStatus($id);
+
+        $turnamenUpdated = DB::table('turnamen')->where('id_turnamen', $id)->first();
+
+        return response()->json([
+            'message' => 'Check selesai',
+            'status' => $turnamenUpdated->status,
+            'end_time' => $turnamenUpdated->end_time,
+        ]);
+    }
+
+    private function giveBonusExpToTop3($turnamenId)
+    {
+        // ambil bonus exp turnamen
+        $turnamen = DB::table('turnamen')->where('id_turnamen', $turnamenId)->first();
+        if (!$turnamen) return;
+
+        $bonus = $turnamen->bonus_exp ?? 0;
+
+        // ambil top 3 peserta berdasarkan skor_akhir
+        $top3 = DB::table('pesertaturnamen')
+            ->where('id_turnamen', $turnamenId)
+            ->orderBy('skor_akhir', 'desc')
+            ->limit(3)
+            ->get();
+
+        if ($top3->isEmpty()) return;
+
+        // Hitungan bonus
+        $bonusCalc = [
+            0 => round($bonus * 0.50),
+            1 => round($bonus * 0.30),
+            2 => round($bonus * 0.20),
+        ];
+
+        foreach ($top3 as $i => $p) {
+            DB::table('pesertaturnamen')
+                ->where('id_peserta', $p->id_peserta)
+                ->update([
+                    'bonus_exp_didapat' => $bonusCalc[$i] ?? 0
+                ]);
+        }
+    }
 
 }

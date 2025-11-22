@@ -145,6 +145,7 @@
                     <h1 class="text-3xl font-bold text-green-400">Turnamen Berlangsung</h1>
                     <p class="text-gray-400 text-xl">{{ $tournament->nama_turnamen }}</p>
                 </div>
+                <div id="countdown" class="text-xl font-bold text-cyan-400"></div>
                 <a href="{{ route('guru.tournament.index') }}" class="btn-secondary">← Kembali ke Daftar</a>
             </div>
             
@@ -328,6 +329,54 @@
                 }
             }
         }
+
+        // >>> COUNTDOWN HANDLER <<<
+        function startCountdownFromServer() {
+            fetch("{{ route('ajax-status', ['id' => $tournament->id_turnamen]) }}")
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.end_time) {
+                        console.error("end_time tidak ditemukan dalam response AJAX");
+                        return;
+                    }
+
+                    // Parse waktu dari server (ISO / default)
+                    const serverEndTime = new Date(data.end_time);
+
+                    if (isNaN(serverEndTime.getTime())) {
+                        console.error("Format tanggal dari server tidak valid:", data.end_time);
+                        return;
+                    }
+
+                    const countdownEl = document.getElementById("countdown");
+
+                    function updateCountdown() {
+                        const now = new Date();
+                        const distance = serverEndTime - now;
+
+                        if (distance <= 0) {
+                            countdownEl.innerHTML = "Waktu Habis!";
+                            clearInterval(countInterval);
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                            return;
+                        }
+
+                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                        countdownEl.innerHTML = minutes + " menit " + seconds + " detik";
+                    }
+
+                    updateCountdown();
+                    const countInterval = setInterval(updateCountdown, 1000);
+                })
+                .catch(err => console.error("Gagal fetch status:", err));
+        }
+
+        // Bisa dipanggil otomatis
+        document.addEventListener("DOMContentLoaded", startCountdownFromServer);
     </script>
 </body>
 </html>

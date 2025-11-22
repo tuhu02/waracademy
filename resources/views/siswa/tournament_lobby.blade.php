@@ -1,5 +1,3 @@
-revisi ini agar mobile support
-
 <!DOCTYPE html>
 
 <html lang="id">
